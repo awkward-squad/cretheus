@@ -10,6 +10,7 @@ module Cretheus.Encode
     text,
     list,
     vector,
+    object,
   )
 where
 
