@@ -23,7 +23,17 @@ source-repository head
   type: git
   location: https://github.com/mitchellwrosen/cretheus.git
 
-common component
+library
+  build-depends:
+    aeson ^>= 2.1.2,
+    base ^>= 4.16 || ^>= 4.17 || ^>= 4.18,
+    bytestring ^>= 0.11.4,
+    text ^>= 2.0.2,
+    vector ^>= 0.13.0,
+  default-language: GHC2021
+  exposed-modules:
+    Cretheus
+    Cretheus.Encode
   ghc-options:
     -Weverything
     -Wno-all-missed-specialisations
@@ -39,15 +49,6 @@ common component
   if impl(ghc >= 9.2)
     ghc-options:
       -Wno-missing-kind-signatures
-
-library
-  build-depends:
-    aeson ^>= 2.1.2,
-    base ^>= 4.16 || ^>= 4.17 || ^>= 4.18,
-    bytestring ^>= 0.11.4,
-    text ^>= 2.0.2,
-    vector ^>= 0.13.0,
-  default-language: GHC2021
-  exposed-modules:
-    Cretheus.Encode
   hs-source-dirs: src
+  other-modules:
+    Cretheus.Internal.Encode
