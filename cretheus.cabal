@@ -42,7 +42,11 @@ common component
 
 library
   build-depends:
+    aeson ^>= 2.1.2,
     base ^>= 4.16 || ^>= 4.17 || ^>= 4.18,
+    text ^>= 2.0.2,
+    vector ^>= 0.13.0,
   default-language: GHC2021
   exposed-modules:
+    Cretheus.Encode
   hs-source-dirs: src
