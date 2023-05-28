@@ -1,8 +1,8 @@
 module Cretheus.Encode
   ( -- * Encoding
     Encoding,
-    bytesEncoding,
-    valueEncoding,
+    asBytes,
+    asValue,
 
     -- * Encoders
     bool,
@@ -11,6 +11,7 @@ module Cretheus.Encode
     list,
     vector,
     object,
+    null,
   )
 where
 
@@ -22,6 +23,7 @@ import Data.ByteString.Lazy qualified as ByteString.Lazy
 import Data.Text (Text)
 import Data.Vector (Vector)
 import Data.Vector qualified as Vector
+import Prelude hiding (null)
 
 class Encoding a where
   bool_ :: Bool -> a
@@ -30,6 +32,7 @@ class Encoding a where
   list_ :: (x -> a) -> [x] -> a
   vector_ :: (x -> a) -> Vector x -> a
   object_ :: [(Aeson.Key, a)] -> a
+  null_ :: a
 
 instance Encoding Aeson.Value where
   bool_ = Aeson.toJSON
@@ -38,6 +41,7 @@ instance Encoding Aeson.Value where
   list_ f = Aeson.toJSON . map f
   vector_ f = Aeson.Array . Vector.map f
   object_ = Aeson.Object . Aeson.KeyMap.fromList
+  null_ = Aeson.Null
 
 instance Encoding Aeson.Encoding where
   bool_ = Aeson.bool
@@ -46,16 +50,17 @@ instance Encoding Aeson.Encoding where
   list_ = Aeson.list
   vector_ f = Aeson.list f . Vector.toList
   object_ = Aeson.pairs . foldMap (\(k, v) -> Aeson.pair k v)
+  null_ = Aeson.null_
 
--- | Interpret an encoding as bytes.
-bytesEncoding :: (forall x. Encoding x => x) -> ByteString
-bytesEncoding encoding =
-  ByteString.Lazy.toStrict (Aeson.encodingToLazyByteString (encoding :: Aeson.Encoding))
+-- | Interpret a encoder a bytes encoder.
+asBytes :: (forall x. Encoding x => a -> x) -> a -> ByteString
+asBytes encoder value =
+  ByteString.Lazy.toStrict (Aeson.encodingToLazyByteString (encoder value :: Aeson.Encoding))
 
 -- | Interpret an encoding as a value.
-valueEncoding :: (forall x. Encoding x => x) -> Aeson.Value
-valueEncoding encoding =
-  encoding
+asValue :: (forall x. Encoding x => a -> x) -> a -> Aeson.Value
+asValue encoder value =
+  encoder value
 
 -- | A bool encoder.
 bool :: Encoding x => Bool -> x
@@ -80,3 +85,7 @@ vector e = vector_ e
 -- | An object encoder.
 object :: Encoding x => [(Aeson.Key, x)] -> x
 object = object_
+
+-- | A null encoder.
+null :: Encoding x => x
+null = null_
