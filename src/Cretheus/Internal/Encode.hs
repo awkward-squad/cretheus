@@ -9,10 +9,12 @@ module Cretheus.Internal.Encode
     bool,
     int,
     text,
+    null,
     list,
     vector,
     object,
-    null,
+    property,
+    optionalProperty,
     something,
   )
 where
@@ -22,6 +24,7 @@ import Data.Aeson.Encoding qualified as Aeson
 import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as ByteString.Lazy
+import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Data.Vector (Vector)
 import Data.Vector qualified as Vector
@@ -79,6 +82,10 @@ int = int_
 text :: Encoding a => Text -> a
 text = text_
 
+-- | A null encoder.
+null :: Encoding a => a
+null = null_
+
 -- | A list encoder.
 list :: Encoding a => [a] -> a
 list = list_
@@ -88,12 +95,18 @@ vector :: Encoding a => Vector a -> a
 vector = vector_
 
 -- | An object encoder.
-object :: Encoding a => [(Aeson.Key, a)] -> a
-object = object_
+object :: Encoding a => [Maybe (Aeson.Key, a)] -> a
+object = object_ . catMaybes
 
--- | A null encoder.
-null :: Encoding a => a
-null = null_
+-- | An object property.
+property :: Aeson.Key -> a -> Maybe (Aeson.Key, a)
+property key value =
+  Just (key, value)
+
+-- | A optional object property.
+optionalProperty :: Aeson.Key -> Maybe a -> Maybe (Aeson.Key, a)
+optionalProperty key =
+  fmap (key,)
 
 -- | A something encoder.
 something :: Encoding a => SomeEncoding -> a

@@ -30,6 +30,8 @@ library
     bytestring ^>= 0.11.4,
     text ^>= 2.0.2,
     vector ^>= 0.13.0,
+  default-extensions:
+    LambdaCase
   default-language: GHC2021
   exposed-modules:
     Cretheus

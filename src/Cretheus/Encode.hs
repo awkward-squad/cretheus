@@ -7,10 +7,12 @@ module Cretheus.Encode
     bool,
     int,
     text,
+    Cretheus.Internal.Encode.null,
     list,
     vector,
     object,
-    Cretheus.Internal.Encode.null,
+    property,
+    optionalProperty,
     something,
   )
 where
