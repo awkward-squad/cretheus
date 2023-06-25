@@ -28,13 +28,18 @@ library
     aeson ^>= 2.1.2,
     base ^>= 4.16 || ^>= 4.17 || ^>= 4.18,
     bytestring ^>= 0.11.4,
+    containers ^>= 0.6.7,
     text ^>= 2.0.2,
     vector ^>= 0.13.0,
   default-extensions:
+    BlockArguments
+    DerivingStrategies
+    DerivingVia
     LambdaCase
   default-language: GHC2021
   exposed-modules:
     Cretheus
+    Cretheus.Decode
     Cretheus.Encode
   ghc-options:
     -Weverything
@@ -53,4 +58,5 @@ library
       -Wno-missing-kind-signatures
   hs-source-dirs: src
   other-modules:
+    Cretheus.Internal.Decode
     Cretheus.Internal.Encode
