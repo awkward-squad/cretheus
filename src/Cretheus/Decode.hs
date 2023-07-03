@@ -5,12 +5,13 @@ module Cretheus.Decode
     fromText,
 
     -- * Decoders
-    refine,
+    value,
     bool,
     int64,
     text,
     list,
     Cretheus.Internal.Decode.map,
+    refine,
 
     -- ** Object
     property,

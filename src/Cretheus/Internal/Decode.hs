@@ -6,12 +6,13 @@ module Cretheus.Internal.Decode
     fromText,
 
     -- * Decoders
-    refine,
+    value,
     bool,
     int64,
     text,
     list,
     Cretheus.Internal.Decode.map,
+    refine,
 
     -- ** Object
     ObjectDecoder,
@@ -75,14 +76,9 @@ fromText :: Decoder a -> Text -> Either Text a
 fromText decoder str =
   fromBytes decoder (Text.encodeUtf8 str)
 
--- | Refine a decoder with a predicate.
-refine :: (a -> Either Text b) -> Decoder a -> Decoder b
-refine p (Decoder f) =
-  Decoder \value -> do
-    x <- f value
-    case p x of
-      Left err -> fail (Text.unpack err)
-      Right y -> pure y
+value :: Decoder Aeson.Value
+value =
+  Decoder Aeson.parseJSON
 
 bool :: Decoder Bool
 bool =
@@ -103,6 +99,15 @@ list (Decoder v) =
 map :: Decoder v -> Decoder (Map Text v)
 map (Decoder v) =
   object "" (ObjectDecoder (traverse v . Aeson.KeyMap.toMapText))
+
+-- | Refine a decoder with a predicate.
+refine :: (a -> Either Text b) -> Decoder a -> Decoder b
+refine p (Decoder f) =
+  Decoder \val -> do
+    x <- f val
+    case p x of
+      Left err -> fail (Text.unpack err)
+      Right y -> pure y
 
 property :: Aeson.Key -> Decoder a -> ObjectDecoder a
 property k (Decoder v) =
