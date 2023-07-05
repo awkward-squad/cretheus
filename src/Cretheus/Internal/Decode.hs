@@ -104,7 +104,7 @@ list =
 
 map :: Decoder v -> Decoder (Map Text v)
 map (Decoder v) =
-  object "" (ObjectDecoder (traverse v . Aeson.KeyMap.toMapText))
+  object (ObjectDecoder (traverse v . Aeson.KeyMap.toMapText))
 
 -- | Refine a decoder with a predicate.
 refine :: (a -> Either Text b) -> Decoder a -> Decoder b
@@ -123,6 +123,6 @@ optionalProperty :: Aeson.Key -> Decoder a -> ObjectDecoder (Maybe a)
 optionalProperty k (Decoder v) =
   ObjectDecoder \o -> Aeson.explicitParseFieldMaybe v o k
 
-object :: String -> ObjectDecoder a -> Decoder a
-object name (ObjectDecoder o) =
-  Decoder (Aeson.withObject name o)
+object :: ObjectDecoder a -> Decoder a
+object (ObjectDecoder o) =
+  Decoder (Aeson.withObject "" o)
