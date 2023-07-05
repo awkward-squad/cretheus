@@ -9,6 +9,7 @@ module Cretheus.Decode
     bool,
     int64,
     text,
+    vector,
     list,
     Cretheus.Internal.Decode.map,
     refine,

@@ -10,6 +10,7 @@ module Cretheus.Internal.Decode
     bool,
     int64,
     text,
+    vector,
     list,
     Cretheus.Internal.Decode.map,
     refine,
@@ -34,6 +35,7 @@ import Data.Map.Strict (Map)
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Text
+import Data.Vector (Vector)
 import Data.Vector qualified as Vector
 
 newtype GDecoder a b = GDecoder
@@ -92,9 +94,13 @@ text :: Decoder Text
 text =
   Decoder Aeson.parseJSON
 
+vector :: Decoder v -> Decoder (Vector v)
+vector (Decoder v) =
+  Decoder (Aeson.withArray "" (traverse v))
+
 list :: Decoder v -> Decoder [v]
-list (Decoder v) =
-  Decoder (Aeson.withArray "" (fmap Vector.toList . traverse v))
+list =
+  fmap Vector.toList . vector
 
 map :: Decoder v -> Decoder (Map Text v)
 map (Decoder v) =
