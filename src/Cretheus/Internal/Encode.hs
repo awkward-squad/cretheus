@@ -8,6 +8,7 @@ module Cretheus.Internal.Encode
     -- * Encoders
     bool,
     int,
+    int64,
     text,
     null,
     list,
@@ -24,6 +25,7 @@ import Data.Aeson.Encoding qualified as Aeson
 import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as ByteString.Lazy
+import Data.Int (Int64)
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Data.Vector (Vector)
@@ -32,7 +34,7 @@ import Prelude hiding (null)
 
 class Encoding a where
   bool_ :: Bool -> a
-  int_ :: Int -> a
+  int_ :: Int64 -> a
   text_ :: Text -> a
   list_ :: [a] -> a
   vector_ :: Vector a -> a
@@ -50,7 +52,7 @@ instance Encoding Aeson.Value where
 
 instance Encoding Aeson.Encoding where
   bool_ = Aeson.bool
-  int_ = Aeson.int
+  int_ = Aeson.int64
   text_ = Aeson.text
   list_ = Aeson.list id
   vector_ = Aeson.list id . Vector.toList
@@ -76,7 +78,11 @@ bool = bool_
 
 -- | An int encoder.
 int :: Encoding a => Int -> a
-int = int_
+int = int_ . fromIntegral @Int @Int64
+
+-- | An int64 encoder.
+int64 :: Encoding a => Int64 -> a
+int64 = int_
 
 -- | A text encoder.
 text :: Encoding a => Text -> a

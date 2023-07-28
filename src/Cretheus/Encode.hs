@@ -6,6 +6,7 @@ module Cretheus.Encode
     -- * Encoders
     bool,
     int,
+    int64,
     text,
     Cretheus.Internal.Encode.null,
     list,
