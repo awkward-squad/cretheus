@@ -3,6 +3,7 @@ module Cretheus.Internal.Encode
     Encoding,
     SomeEncoding (..),
     asBytes,
+    asText,
     asValue,
 
     -- * Encoders
@@ -28,6 +29,7 @@ import Data.ByteString.Lazy qualified as ByteString.Lazy
 import Data.Int (Int64)
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
+import Data.Text.Encoding qualified as Text
 import Data.Vector (Vector)
 import Data.Vector qualified as Vector
 import Prelude hiding (null)
@@ -66,6 +68,11 @@ data SomeEncoding
 asBytes :: (forall a. Encoding a => a) -> ByteString
 asBytes encoding =
   ByteString.Lazy.toStrict (Aeson.encodingToLazyByteString (encoding :: Aeson.Encoding))
+
+-- | Interpret an encoding as text.
+asText :: (forall a. Encoding a => a) -> Text
+asText encoding =
+  Text.decodeUtf8 (asBytes encoding)
 
 -- | Interpret an encoding as a value.
 asValue :: (forall a. Encoding a => a) -> Aeson.Value

@@ -1,6 +1,7 @@
 module Cretheus.Encode
   ( -- * Encoding
     asBytes,
+    asText,
     asValue,
 
     -- * Encoders
