@@ -3,6 +3,7 @@ module Cretheus.Decode
     fromBytes,
     fromLazyBytes,
     fromText,
+    fromValue,
 
     -- * Decoders
     value,

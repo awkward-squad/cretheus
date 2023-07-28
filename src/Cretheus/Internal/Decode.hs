@@ -4,6 +4,7 @@ module Cretheus.Internal.Decode
     fromBytes,
     fromLazyBytes,
     fromText,
+    fromValue,
 
     -- * Decoders
     value,
@@ -77,6 +78,12 @@ fromLazyBytes (Decoder parser) bytes =
 fromText :: Decoder a -> Text -> Either Text a
 fromText decoder str =
   fromBytes decoder (Text.encodeUtf8 str)
+
+fromValue :: Decoder a -> Aeson.Value -> Either Text a
+fromValue (Decoder decoder) value =
+  case Aeson.parseEither decoder value of
+    Left err -> Left (Text.pack err)
+    Right result -> Right result
 
 value :: Decoder Aeson.Value
 value =
