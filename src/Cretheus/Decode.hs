@@ -13,6 +13,7 @@ module Cretheus.Decode
     vector,
     list,
     Cretheus.Internal.Decode.map,
+    nullable,
     refine,
 
     -- ** Object

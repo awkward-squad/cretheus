@@ -14,6 +14,7 @@ module Cretheus.Internal.Decode
     vector,
     list,
     Cretheus.Internal.Decode.map,
+    nullable,
     refine,
 
     -- ** Object
@@ -102,8 +103,8 @@ text =
   Decoder Aeson.parseJSON
 
 vector :: Decoder v -> Decoder (Vector v)
-vector (Decoder v) =
-  Decoder (Aeson.withArray "" (traverse v))
+vector (Decoder f) =
+  Decoder (Aeson.withArray "" (traverse f))
 
 list :: Decoder v -> Decoder [v]
 list =
@@ -112,6 +113,13 @@ list =
 map :: Decoder v -> Decoder (Map Text v)
 map (Decoder v) =
   object (ObjectDecoder (traverse v . Aeson.KeyMap.toMapText))
+
+-- | Modify a decoder to also accept a @null@ value.
+nullable :: Decoder v -> Decoder (Maybe v)
+nullable (Decoder f) =
+  Decoder \case
+    Aeson.Null -> pure Nothing
+    val -> Just <$> f val
 
 -- | Refine a decoder with a predicate.
 refine :: (a -> Either Text b) -> Decoder a -> Decoder b
@@ -128,7 +136,7 @@ property k (Decoder v) =
 
 optionalProperty :: Aeson.Key -> Decoder a -> ObjectDecoder (Maybe a)
 optionalProperty k (Decoder v) =
-  ObjectDecoder \o -> Aeson.explicitParseFieldMaybe v o k
+  ObjectDecoder \o -> Aeson.explicitParseFieldMaybe' v o k
 
 object :: ObjectDecoder a -> Decoder a
 object (ObjectDecoder o) =
