@@ -4,7 +4,7 @@ author: Mitchell Rosen
 bug-reports: https://github.com/mitchellwrosen/cretheus/issues
 category: Json
 copyright: Copyright (C) 2023 Mitchell Rosen
-description: A clean @aeson@ wrapper.
+description: A clean aeson wrapper.
 homepage: https://github.com/mitchellwrosen/cretheus
 license: BSD-3-Clause
 license-file: LICENSE

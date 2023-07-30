@@ -9,14 +9,17 @@ module Cretheus.Encode
     int,
     int64,
     text,
-    Cretheus.Internal.Encode.null,
+    null,
     list,
     vector,
+    something,
+
+    -- ** Object encoders
     object,
     property,
     optionalProperty,
-    something,
   )
 where
 
 import Cretheus.Internal.Encode
+import Prelude hiding (null)
