@@ -17,11 +17,11 @@ module Cretheus.Internal.Decode
     nullable,
     refine,
 
-    -- ** Object
+    -- ** Object decoders
     ObjectDecoder,
+    object,
     property,
     optionalProperty,
-    object,
   )
 where
 
@@ -56,60 +56,73 @@ instance Monad (GDecoder a) where
       mx i >>= \x ->
         unGDecoder (f x) i
 
+-- | A decoder.
 newtype Decoder a
   = Decoder (Aeson.Value -> Aeson.Parser a)
   deriving (Applicative, Functor, Monad) via (GDecoder Aeson.Value)
 
+-- | An object decoder.
 newtype ObjectDecoder a
   = ObjectDecoder (Aeson.Object -> Aeson.Parser a)
   deriving (Applicative, Functor, Monad) via (GDecoder Aeson.Object)
 
+-- | Decode bytes.
 fromBytes :: Decoder a -> ByteString -> Either Text a
 fromBytes (Decoder parser) bytes =
   case Aeson.eitherDecodeStrictWith Aeson.json' (Aeson.iparse parser) bytes of
     Left (path, err) -> Left (Text.pack (Aeson.formatError path err))
     Right result -> Right result
 
+-- | Decode lazy bytes.
 fromLazyBytes :: Decoder a -> Lazy.ByteString -> Either Text a
 fromLazyBytes (Decoder parser) bytes =
   case Aeson.eitherDecodeWith Aeson.json' (Aeson.iparse parser) bytes of
     Left (path, err) -> Left (Text.pack (Aeson.formatError path err))
     Right result -> Right result
 
+-- | Decode text.
 fromText :: Decoder a -> Text -> Either Text a
 fromText decoder str =
   fromBytes decoder (Text.encodeUtf8 str)
 
+-- | Decode a value.
 fromValue :: Decoder a -> Aeson.Value -> Either Text a
 fromValue (Decoder decoder) val =
   case Aeson.parseEither decoder val of
     Left err -> Left (Text.pack err)
     Right result -> Right result
 
+-- | A value decoder.
 value :: Decoder Aeson.Value
 value =
   Decoder Aeson.parseJSON
 
+-- | A bool decoder.
 bool :: Decoder Bool
 bool =
   Decoder Aeson.parseJSON
 
+-- | An int64 decoder.
 int64 :: Decoder Int64
 int64 =
   Decoder Aeson.parseJSON
 
+-- | A text decoder.
 text :: Decoder Text
 text =
   Decoder Aeson.parseJSON
 
+-- | A vector decoder.
 vector :: Decoder v -> Decoder (Vector v)
 vector (Decoder f) =
   Decoder (Aeson.withArray "" (traverse f))
 
+-- | A list decoder.
 list :: Decoder v -> Decoder [v]
 list =
   fmap Vector.toList . vector
 
+-- | A map decoder.
 map :: Decoder v -> Decoder (Map Text v)
 map (Decoder v) =
   object (ObjectDecoder (traverse v . Aeson.KeyMap.toMapText))
@@ -130,14 +143,17 @@ refine p (Decoder f) =
       Left err -> fail (Text.unpack err)
       Right y -> pure y
 
+-- | An object property decoder.
 property :: Aeson.Key -> Decoder a -> ObjectDecoder a
 property k (Decoder v) =
   ObjectDecoder \o -> Aeson.explicitParseField v o k
 
+-- | An optional object property decoder.
 optionalProperty :: Aeson.Key -> Decoder a -> ObjectDecoder (Maybe a)
 optionalProperty k (Decoder v) =
   ObjectDecoder \o -> Aeson.explicitParseFieldMaybe' v o k
 
+-- | An object decoder.
 object :: ObjectDecoder a -> Decoder a
 object (ObjectDecoder o) =
   Decoder (Aeson.withObject "" o)

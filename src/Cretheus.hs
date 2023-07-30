@@ -2,6 +2,7 @@ module Cretheus
   ( -- * Encoding
     Encoding,
     SomeEncoding (..),
+    PropertyEncoding,
 
     -- * Decoding
     Decoder,
@@ -10,4 +11,4 @@ module Cretheus
 where
 
 import Cretheus.Internal.Decode (Decoder, ObjectDecoder)
-import Cretheus.Internal.Encode (Encoding, SomeEncoding (..))
+import Cretheus.Internal.Encode (Encoding, PropertyEncoding, SomeEncoding (..))

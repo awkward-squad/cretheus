@@ -6,7 +6,7 @@ module Cretheus.Internal.Encode
     asText,
     asValue,
 
-    -- * Encoders
+    -- * Basic encoders
     bool,
     int,
     int64,
@@ -14,10 +14,13 @@ module Cretheus.Internal.Encode
     null,
     list,
     vector,
+    something,
+
+    -- ** Object encoders
+    PropertyEncoding,
     object,
     property,
     optionalProperty,
-    something,
   )
 where
 
@@ -27,21 +30,28 @@ import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as ByteString.Lazy
 import Data.Int (Int64)
-import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Data.Text.Encoding qualified as Text
 import Data.Vector (Vector)
 import Data.Vector qualified as Vector
 import Prelude hiding (null)
 
+-- | An encoding, which can be interpreted as a structured value or unstructured text.
 class Encoding a where
   bool_ :: Bool -> a
+  bool_ = undefined
   int_ :: Int64 -> a
+  int_ = undefined
   text_ :: Text -> a
+  text_ = undefined
   list_ :: [a] -> a
+  list_ = undefined
   vector_ :: Vector a -> a
-  object_ :: [(Aeson.Key, a)] -> a
+  vector_ = undefined
+  object_ :: [Prop a] -> a
+  object_ = undefined
   null_ :: a
+  null_ = undefined
 
 instance Encoding Aeson.Value where
   bool_ = Aeson.toJSON
@@ -49,7 +59,7 @@ instance Encoding Aeson.Value where
   text_ = Aeson.toJSON
   list_ = Aeson.toJSON
   vector_ = Aeson.Array
-  object_ = Aeson.Object . Aeson.KeyMap.fromList
+  object_ = Aeson.Object . Aeson.KeyMap.fromList . map (\(Prop k v) -> (k, v))
   null_ = Aeson.Null
 
 instance Encoding Aeson.Encoding where
@@ -58,7 +68,7 @@ instance Encoding Aeson.Encoding where
   text_ = Aeson.text
   list_ = Aeson.list id
   vector_ = Aeson.list id . Vector.toList
-  object_ = Aeson.pairs . foldMap (\(k, v) -> Aeson.pair k v)
+  object_ = Aeson.pairs . foldMap (\(Prop k v) -> Aeson.pair k v)
   null_ = Aeson.null_
 
 data SomeEncoding
@@ -107,20 +117,38 @@ list = list_
 vector :: Encoding a => Vector a -> a
 vector = vector_
 
--- | An object encoder.
-object :: Encoding a => [Maybe (Aeson.Key, a)] -> a
-object = object_ . catMaybes
-
--- | An object property.
-property :: Aeson.Key -> a -> Maybe (Aeson.Key, a)
-property key value =
-  Just (key, value)
-
--- | A optional object property.
-optionalProperty :: Aeson.Key -> Maybe a -> Maybe (Aeson.Key, a)
-optionalProperty key =
-  fmap (key,)
-
 -- | A something encoder.
 something :: Encoding a => SomeEncoding -> a
 something (SomeEncoding x) = x
+
+-- | An object property encoding.
+data PropertyEncoding a
+  = Algo !(Prop a)
+  | Nada
+
+data Prop a
+  = Prop !Aeson.Key !a
+
+-- | An object encoder.
+object :: Encoding a => [PropertyEncoding a] -> a
+object = object_ . props
+  where
+    props :: [PropertyEncoding a] -> [Prop a]
+    props =
+      foldr
+        ( \case
+            Algo prop -> (prop :)
+            Nada -> id
+        )
+        []
+
+-- | An object property encoder.
+property :: Aeson.Key -> a -> PropertyEncoding a
+property key val =
+  Algo (Prop key val)
+
+-- | A optional object property encoder.
+optionalProperty :: Aeson.Key -> Maybe a -> PropertyEncoding a
+optionalProperty key = \case
+  Nothing -> Nada
+  Just val -> Algo (Prop key val)

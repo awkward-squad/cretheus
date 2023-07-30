@@ -5,7 +5,7 @@ module Cretheus.Decode
     fromText,
     fromValue,
 
-    -- * Decoders
+    -- * Basic decoders
     value,
     bool,
     int64,
@@ -16,10 +16,10 @@ module Cretheus.Decode
     nullable,
     refine,
 
-    -- ** Object
+    -- ** Object decoders
+    object,
     property,
     optionalProperty,
-    object,
   )
 where
 
