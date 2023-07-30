@@ -1,0 +1,457 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Cretheus.Internal.Decode</span><span>
+</span><span id="line-2"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- * Decoder</span></span><span>
+</span><span id="line-3"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier">Decoder</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-4"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#fromBytes"><span class="hs-identifier">fromBytes</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-5"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#fromLazyBytes"><span class="hs-identifier">fromLazyBytes</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-6"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#fromText"><span class="hs-identifier">fromText</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-7"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#fromValue"><span class="hs-identifier">fromValue</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-8"></span><span>
+</span><span id="line-9"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Decoders</span></span><span>
+</span><span id="line-10"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#value"><span class="hs-identifier">value</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-11"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#bool"><span class="hs-identifier">bool</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-12"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#int64"><span class="hs-identifier">int64</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-13"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#text"><span class="hs-identifier">text</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-14"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#vector"><span class="hs-identifier">vector</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-15"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#list"><span class="hs-identifier">list</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#map"><span class="hs-identifier">Cretheus.Internal.Decode.map</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#nullable"><span class="hs-identifier">nullable</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-18"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#refine"><span class="hs-identifier">refine</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span>    </span><span class="annot"><span class="hs-comment">-- ** Object decoders</span></span><span>
+</span><span id="line-21"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#ObjectDecoder"><span class="hs-identifier">ObjectDecoder</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-22"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#object"><span class="hs-identifier">object</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#property"><span class="hs-identifier">property</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span>    </span><span class="annot"><a href="Cretheus.Internal.Decode.html#optionalProperty"><span class="hs-identifier">optionalProperty</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier">Control.Monad</span></a></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Monad</span></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Aeson</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Aeson</span></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Aeson.KeyMap</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Aeson.KeyMap</span></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Aeson.Parser</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Aeson</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">eitherDecodeStrictWith</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">eitherDecodeWith</span></span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Aeson.Types</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Aeson</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/bytestring-0.11.4.0/src"><span class="hs-identifier">Data.ByteString</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/bytestring-0.11.4.0/src"><span class="hs-identifier">ByteString</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/bytestring-0.11.4.0/src"><span class="hs-identifier">Data.ByteString.Lazy</span></a></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Lazy</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/bytestring-0.11.4.0/src"><span class="hs-identifier">ByteString</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier">Data.Int</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier">Int64</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Map</span></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Text</span></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.Encoding</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Text</span></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vector</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Vector</span></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vector</span></span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Vector</span></span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span class="hs-keyword">newtype</span><span> </span><span id="GDecoder"><span class="annot"><a href="Cretheus.Internal.Decode.html#GDecoder"><span class="hs-identifier hs-var">GDecoder</span></a></span></span><span> </span><span id="local-6989586621679067928"><span class="annot"><a href="#local-6989586621679067928"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span id="local-6989586621679067927"><span class="annot"><a href="#local-6989586621679067927"><span class="hs-identifier hs-type">b</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="GDecoder"><span class="annot"><a href="Cretheus.Internal.Decode.html#GDecoder"><span class="hs-identifier hs-var">GDecoder</span></a></span></span><span>
+</span><span id="line-44"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="unGDecoder"><span class="annot"><span class="annottext">forall a b. GDecoder a b -&gt; a -&gt; Parser b
+</span><a href="Cretheus.Internal.Decode.html#unGDecoder"><span class="hs-identifier hs-var hs-var">unGDecoder</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679067928"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Aeson.Parser</span></span><span> </span><span class="annot"><a href="#local-6989586621679067927"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-45"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="annot"><span class="hs-keyword">stock</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679067745"><span id="local-6989586621679067749"><span class="annot"><span class="annottext">forall a b. a -&gt; GDecoder a b -&gt; GDecoder a a
+forall a b. (a -&gt; b) -&gt; GDecoder a a -&gt; GDecoder a b
+forall a a b. a -&gt; GDecoder a b -&gt; GDecoder a a
+forall a a b. (a -&gt; b) -&gt; GDecoder a a -&gt; GDecoder a b
+forall (f :: * -&gt; *).
+(forall a b. (a -&gt; b) -&gt; f a -&gt; f b)
+-&gt; (forall a b. a -&gt; f b -&gt; f a) -&gt; Functor f
+&lt;$ :: forall a b. a -&gt; GDecoder a b -&gt; GDecoder a a
+$c&lt;$ :: forall a a b. a -&gt; GDecoder a b -&gt; GDecoder a a
+fmap :: forall a b. (a -&gt; b) -&gt; GDecoder a a -&gt; GDecoder a b
+$cfmap :: forall a a b. (a -&gt; b) -&gt; GDecoder a a -&gt; GDecoder a b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Functor</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679067732"><span id="local-6989586621679067734"><span id="local-6989586621679067736"><span id="local-6989586621679067906"><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Applicative</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Cretheus.Internal.Decode.html#GDecoder"><span class="hs-identifier hs-type">GDecoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067906"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-49"></span><span>  </span><span id="local-6989586621679067728"><span class="annot"><span class="annottext">pure :: forall a. a -&gt; GDecoder a a
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var hs-var hs-var hs-var">pure</span></a></span></span><span> </span><span id="local-6989586621679067727"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067727"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; Parser b) -&gt; GDecoder a b
+</span><a href="Cretheus.Internal.Decode.html#GDecoder"><span class="hs-identifier hs-var">GDecoder</span></a></span><span> </span><span class="hs-glyph">\</span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">pure</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067727"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-50"></span><span>  </span><span id="local-6989586621679067725"><span class="annot"><span class="annottext">&lt;*&gt; :: forall a b. GDecoder a (a -&gt; b) -&gt; GDecoder a a -&gt; GDecoder a b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-operator hs-var hs-var hs-var hs-var">(&lt;*&gt;)</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a b. Monad m =&gt; m (a -&gt; b) -&gt; m a -&gt; m b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">Monad.ap</span></a></span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679067719"><span id="local-6989586621679067904"><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Monad</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Cretheus.Internal.Decode.html#GDecoder"><span class="hs-identifier hs-type">GDecoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067904"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-53"></span><span>  </span><span id="local-6989586621679067715"><span class="annot"><span class="annottext">return :: forall a. a -&gt; GDecoder a a
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var hs-var hs-var hs-var">return</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">pure</span></a></span><span>
+</span><span id="line-54"></span><span>  </span><span class="annot"><a href="Cretheus.Internal.Decode.html#GDecoder"><span class="hs-identifier hs-type">GDecoder</span></a></span><span> </span><span id="local-6989586621679067712"><span class="annot"><span class="annottext">a -&gt; Parser a
+</span><a href="#local-6989586621679067712"><span class="hs-identifier hs-var">mx</span></a></span></span><span> </span><span id="local-6989586621679067711"><span class="annot"><span class="annottext">&gt;&gt;= :: forall a b. GDecoder a a -&gt; (a -&gt; GDecoder a b) -&gt; GDecoder a b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-operator hs-var hs-var hs-var hs-var">&gt;&gt;=</span></a></span></span><span> </span><span id="local-6989586621679067710"><span class="annot"><span class="annottext">a -&gt; GDecoder a b
+</span><a href="#local-6989586621679067710"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-55"></span><span>    </span><span class="annot"><span class="annottext">forall a b. (a -&gt; Parser b) -&gt; GDecoder a b
+</span><a href="Cretheus.Internal.Decode.html#GDecoder"><span class="hs-identifier hs-var">GDecoder</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679067709"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067709"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-56"></span><span>      </span><span class="annot"><span class="annottext">a -&gt; Parser a
+</span><a href="#local-6989586621679067712"><span class="hs-identifier hs-var">mx</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067709"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-operator hs-var">&gt;&gt;=</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679067708"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067708"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-57"></span><span>        </span><span class="annot"><span class="annottext">forall a b. GDecoder a b -&gt; a -&gt; Parser b
+</span><a href="Cretheus.Internal.Decode.html#unGDecoder"><span class="hs-identifier hs-var">unGDecoder</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; GDecoder a b
+</span><a href="#local-6989586621679067710"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067708"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067709"><span class="hs-identifier hs-var">i</span></a></span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span class="hs-comment">-- | A decoder.</span><span>
+</span><span id="line-60"></span><span class="hs-keyword">newtype</span><span> </span><span id="Decoder"><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-var">Decoder</span></a></span></span><span> </span><span id="local-6989586621679067830"><span class="annot"><a href="#local-6989586621679067830"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-61"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="Decoder"><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-var">Decoder</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Aeson.Value</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Aeson.Parser</span></span><span> </span><span class="annot"><a href="#local-6989586621679067830"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679067686"><span id="local-6989586621679067690"><span id="local-6989586621679067694"><span id="local-6989586621679067698"><span id="local-6989586621679067702"><span class="annot"><span class="annottext">Functor Decoder
+forall a. a -&gt; Decoder a
+forall a b. Decoder a -&gt; Decoder b -&gt; Decoder a
+forall a b. Decoder a -&gt; Decoder b -&gt; Decoder b
+forall a b. Decoder (a -&gt; b) -&gt; Decoder a -&gt; Decoder b
+forall a b c. (a -&gt; b -&gt; c) -&gt; Decoder a -&gt; Decoder b -&gt; Decoder c
+forall (f :: * -&gt; *).
+Functor f
+-&gt; (forall a. a -&gt; f a)
+-&gt; (forall a b. f (a -&gt; b) -&gt; f a -&gt; f b)
+-&gt; (forall a b c. (a -&gt; b -&gt; c) -&gt; f a -&gt; f b -&gt; f c)
+-&gt; (forall a b. f a -&gt; f b -&gt; f b)
+-&gt; (forall a b. f a -&gt; f b -&gt; f a)
+-&gt; Applicative f
+&lt;* :: forall a b. Decoder a -&gt; Decoder b -&gt; Decoder a
+$c&lt;* :: forall a b. Decoder a -&gt; Decoder b -&gt; Decoder a
+*&gt; :: forall a b. Decoder a -&gt; Decoder b -&gt; Decoder b
+$c*&gt; :: forall a b. Decoder a -&gt; Decoder b -&gt; Decoder b
+liftA2 :: forall a b c. (a -&gt; b -&gt; c) -&gt; Decoder a -&gt; Decoder b -&gt; Decoder c
+$cliftA2 :: forall a b c. (a -&gt; b -&gt; c) -&gt; Decoder a -&gt; Decoder b -&gt; Decoder c
+&lt;*&gt; :: forall a b. Decoder (a -&gt; b) -&gt; Decoder a -&gt; Decoder b
+$c&lt;*&gt; :: forall a b. Decoder (a -&gt; b) -&gt; Decoder a -&gt; Decoder b
+pure :: forall a. a -&gt; Decoder a
+$cpure :: forall a. a -&gt; Decoder a
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Applicative</span></a></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679067677"><span id="local-6989586621679067681"><span class="annot"><span class="annottext">forall a b. a -&gt; Decoder b -&gt; Decoder a
+forall a b. (a -&gt; b) -&gt; Decoder a -&gt; Decoder b
+forall (f :: * -&gt; *).
+(forall a b. (a -&gt; b) -&gt; f a -&gt; f b)
+-&gt; (forall a b. a -&gt; f b -&gt; f a) -&gt; Functor f
+&lt;$ :: forall a b. a -&gt; Decoder b -&gt; Decoder a
+$c&lt;$ :: forall a b. a -&gt; Decoder b -&gt; Decoder a
+fmap :: forall a b. (a -&gt; b) -&gt; Decoder a -&gt; Decoder b
+$cfmap :: forall a b. (a -&gt; b) -&gt; Decoder a -&gt; Decoder b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Functor</span></a></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679067663"><span id="local-6989586621679067667"><span id="local-6989586621679067671"><span class="annot"><span class="annottext">Applicative Decoder
+forall a. a -&gt; Decoder a
+forall a b. Decoder a -&gt; Decoder b -&gt; Decoder b
+forall a b. Decoder a -&gt; (a -&gt; Decoder b) -&gt; Decoder b
+forall (m :: * -&gt; *).
+Applicative m
+-&gt; (forall a b. m a -&gt; (a -&gt; m b) -&gt; m b)
+-&gt; (forall a b. m a -&gt; m b -&gt; m b)
+-&gt; (forall a. a -&gt; m a)
+-&gt; Monad m
+return :: forall a. a -&gt; Decoder a
+$creturn :: forall a. a -&gt; Decoder a
+&gt;&gt; :: forall a b. Decoder a -&gt; Decoder b -&gt; Decoder b
+$c&gt;&gt; :: forall a b. Decoder a -&gt; Decoder b -&gt; Decoder b
+&gt;&gt;= :: forall a b. Decoder a -&gt; (a -&gt; Decoder b) -&gt; Decoder b
+$c&gt;&gt;= :: forall a b. Decoder a -&gt; (a -&gt; Decoder b) -&gt; Decoder b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Monad</span></a></span></span></span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Cretheus.Internal.Decode.html#GDecoder"><span class="hs-identifier hs-type">GDecoder</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Aeson.Value</span></span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span>
+</span><span id="line-64"></span><span class="hs-comment">-- | An object decoder.</span><span>
+</span><span id="line-65"></span><span class="hs-keyword">newtype</span><span> </span><span id="ObjectDecoder"><span class="annot"><a href="Cretheus.Internal.Decode.html#ObjectDecoder"><span class="hs-identifier hs-var">ObjectDecoder</span></a></span></span><span> </span><span id="local-6989586621679067808"><span class="annot"><a href="#local-6989586621679067808"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-66"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="ObjectDecoder"><span class="annot"><a href="Cretheus.Internal.Decode.html#ObjectDecoder"><span class="hs-identifier hs-var">ObjectDecoder</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Aeson.Object</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Aeson.Parser</span></span><span> </span><span class="annot"><a href="#local-6989586621679067808"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-67"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679067638"><span id="local-6989586621679067642"><span id="local-6989586621679067646"><span id="local-6989586621679067650"><span id="local-6989586621679067654"><span class="annot"><span class="annottext">Functor ObjectDecoder
+forall a. a -&gt; ObjectDecoder a
+forall a b. ObjectDecoder a -&gt; ObjectDecoder b -&gt; ObjectDecoder a
+forall a b. ObjectDecoder a -&gt; ObjectDecoder b -&gt; ObjectDecoder b
+forall a b.
+ObjectDecoder (a -&gt; b) -&gt; ObjectDecoder a -&gt; ObjectDecoder b
+forall a b c.
+(a -&gt; b -&gt; c)
+-&gt; ObjectDecoder a -&gt; ObjectDecoder b -&gt; ObjectDecoder c
+forall (f :: * -&gt; *).
+Functor f
+-&gt; (forall a. a -&gt; f a)
+-&gt; (forall a b. f (a -&gt; b) -&gt; f a -&gt; f b)
+-&gt; (forall a b c. (a -&gt; b -&gt; c) -&gt; f a -&gt; f b -&gt; f c)
+-&gt; (forall a b. f a -&gt; f b -&gt; f b)
+-&gt; (forall a b. f a -&gt; f b -&gt; f a)
+-&gt; Applicative f
+&lt;* :: forall a b. ObjectDecoder a -&gt; ObjectDecoder b -&gt; ObjectDecoder a
+$c&lt;* :: forall a b. ObjectDecoder a -&gt; ObjectDecoder b -&gt; ObjectDecoder a
+*&gt; :: forall a b. ObjectDecoder a -&gt; ObjectDecoder b -&gt; ObjectDecoder b
+$c*&gt; :: forall a b. ObjectDecoder a -&gt; ObjectDecoder b -&gt; ObjectDecoder b
+liftA2 :: forall a b c.
+(a -&gt; b -&gt; c)
+-&gt; ObjectDecoder a -&gt; ObjectDecoder b -&gt; ObjectDecoder c
+$cliftA2 :: forall a b c.
+(a -&gt; b -&gt; c)
+-&gt; ObjectDecoder a -&gt; ObjectDecoder b -&gt; ObjectDecoder c
+&lt;*&gt; :: forall a b.
+ObjectDecoder (a -&gt; b) -&gt; ObjectDecoder a -&gt; ObjectDecoder b
+$c&lt;*&gt; :: forall a b.
+ObjectDecoder (a -&gt; b) -&gt; ObjectDecoder a -&gt; ObjectDecoder b
+pure :: forall a. a -&gt; ObjectDecoder a
+$cpure :: forall a. a -&gt; ObjectDecoder a
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Applicative</span></a></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679067629"><span id="local-6989586621679067633"><span class="annot"><span class="annottext">forall a b. a -&gt; ObjectDecoder b -&gt; ObjectDecoder a
+forall a b. (a -&gt; b) -&gt; ObjectDecoder a -&gt; ObjectDecoder b
+forall (f :: * -&gt; *).
+(forall a b. (a -&gt; b) -&gt; f a -&gt; f b)
+-&gt; (forall a b. a -&gt; f b -&gt; f a) -&gt; Functor f
+&lt;$ :: forall a b. a -&gt; ObjectDecoder b -&gt; ObjectDecoder a
+$c&lt;$ :: forall a b. a -&gt; ObjectDecoder b -&gt; ObjectDecoder a
+fmap :: forall a b. (a -&gt; b) -&gt; ObjectDecoder a -&gt; ObjectDecoder b
+$cfmap :: forall a b. (a -&gt; b) -&gt; ObjectDecoder a -&gt; ObjectDecoder b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Functor</span></a></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679067615"><span id="local-6989586621679067619"><span id="local-6989586621679067623"><span class="annot"><span class="annottext">Applicative ObjectDecoder
+forall a. a -&gt; ObjectDecoder a
+forall a b. ObjectDecoder a -&gt; ObjectDecoder b -&gt; ObjectDecoder b
+forall a b.
+ObjectDecoder a -&gt; (a -&gt; ObjectDecoder b) -&gt; ObjectDecoder b
+forall (m :: * -&gt; *).
+Applicative m
+-&gt; (forall a b. m a -&gt; (a -&gt; m b) -&gt; m b)
+-&gt; (forall a b. m a -&gt; m b -&gt; m b)
+-&gt; (forall a. a -&gt; m a)
+-&gt; Monad m
+return :: forall a. a -&gt; ObjectDecoder a
+$creturn :: forall a. a -&gt; ObjectDecoder a
+&gt;&gt; :: forall a b. ObjectDecoder a -&gt; ObjectDecoder b -&gt; ObjectDecoder b
+$c&gt;&gt; :: forall a b. ObjectDecoder a -&gt; ObjectDecoder b -&gt; ObjectDecoder b
+&gt;&gt;= :: forall a b.
+ObjectDecoder a -&gt; (a -&gt; ObjectDecoder b) -&gt; ObjectDecoder b
+$c&gt;&gt;= :: forall a b.
+ObjectDecoder a -&gt; (a -&gt; ObjectDecoder b) -&gt; ObjectDecoder b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Monad</span></a></span></span></span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Cretheus.Internal.Decode.html#GDecoder"><span class="hs-identifier hs-type">GDecoder</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Aeson.Object</span></span><span class="hs-special">)</span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span class="hs-comment">-- | Decode bytes.</span><span>
+</span><span id="line-70"></span><span id="local-6989586621679067851"><span class="annot"><a href="Cretheus.Internal.Decode.html#fromBytes"><span class="hs-identifier hs-type">fromBytes</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067851"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/bytestring-0.11.4.0/src"><span class="hs-identifier hs-type">ByteString</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Either</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="#local-6989586621679067851"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-71"></span><span id="fromBytes"><span class="annot"><span class="annottext">fromBytes :: forall a. Decoder a -&gt; ByteString -&gt; Either Text a
+</span><a href="Cretheus.Internal.Decode.html#fromBytes"><span class="hs-identifier hs-var hs-var">fromBytes</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span id="local-6989586621679067611"><span class="annot"><span class="annottext">Value -&gt; Parser a
+</span><a href="#local-6989586621679067611"><span class="hs-identifier hs-var">parser</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679067610"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679067610"><span class="hs-identifier hs-var">bytes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-72"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">forall a.
+Parser Value
+-&gt; (Value -&gt; IResult a)
+-&gt; ByteString
+-&gt; Either (JSONPath, String) a
+</span><span class="hs-identifier hs-var">Aeson.eitherDecodeStrictWith</span></span><span> </span><span class="annot"><span class="annottext">Parser Value
+</span><span class="hs-identifier hs-var">Aeson.json'</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (a -&gt; Parser b) -&gt; a -&gt; IResult b
+</span><span class="hs-identifier hs-var">Aeson.iparse</span></span><span> </span><span class="annot"><span class="annottext">Value -&gt; Parser a
+</span><a href="#local-6989586621679067611"><span class="hs-identifier hs-var">parser</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679067610"><span class="hs-identifier hs-var">bytes</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-73"></span><span>    </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Left</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679067607"><span class="annot"><span class="annottext">JSONPath
+</span><a href="#local-6989586621679067607"><span class="hs-identifier hs-var">path</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679067606"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679067606"><span class="hs-identifier hs-var">err</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a b. a -&gt; Either a b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">Left</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">Text.pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">JSONPath -&gt; String -&gt; String
+</span><span class="hs-identifier hs-var">Aeson.formatError</span></span><span> </span><span class="annot"><span class="annottext">JSONPath
+</span><a href="#local-6989586621679067607"><span class="hs-identifier hs-var">path</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679067606"><span class="hs-identifier hs-var">err</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-74"></span><span>    </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Right</span></a></span><span> </span><span id="local-6989586621679067603"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067603"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a b. b -&gt; Either a b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">Right</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067603"><span class="hs-identifier hs-var">result</span></a></span><span>
+</span><span id="line-75"></span><span>
+</span><span id="line-76"></span><span class="hs-comment">-- | Decode lazy bytes.</span><span>
+</span><span id="line-77"></span><span id="local-6989586621679067840"><span class="annot"><a href="Cretheus.Internal.Decode.html#fromLazyBytes"><span class="hs-identifier hs-type">fromLazyBytes</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067840"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/bytestring-0.11.4.0/src"><span class="hs-identifier hs-type">Lazy.ByteString</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Either</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="#local-6989586621679067840"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-78"></span><span id="fromLazyBytes"><span class="annot"><span class="annottext">fromLazyBytes :: forall a. Decoder a -&gt; ByteString -&gt; Either Text a
+</span><a href="Cretheus.Internal.Decode.html#fromLazyBytes"><span class="hs-identifier hs-var hs-var">fromLazyBytes</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span id="local-6989586621679067602"><span class="annot"><span class="annottext">Value -&gt; Parser a
+</span><a href="#local-6989586621679067602"><span class="hs-identifier hs-var">parser</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679067601"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679067601"><span class="hs-identifier hs-var">bytes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-79"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">forall a.
+Parser Value
+-&gt; (Value -&gt; IResult a)
+-&gt; ByteString
+-&gt; Either (JSONPath, String) a
+</span><span class="hs-identifier hs-var">Aeson.eitherDecodeWith</span></span><span> </span><span class="annot"><span class="annottext">Parser Value
+</span><span class="hs-identifier hs-var">Aeson.json'</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a b. (a -&gt; Parser b) -&gt; a -&gt; IResult b
+</span><span class="hs-identifier hs-var">Aeson.iparse</span></span><span> </span><span class="annot"><span class="annottext">Value -&gt; Parser a
+</span><a href="#local-6989586621679067602"><span class="hs-identifier hs-var">parser</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679067601"><span class="hs-identifier hs-var">bytes</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-80"></span><span>    </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Left</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679067600"><span class="annot"><span class="annottext">JSONPath
+</span><a href="#local-6989586621679067600"><span class="hs-identifier hs-var">path</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679067599"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679067599"><span class="hs-identifier hs-var">err</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a b. a -&gt; Either a b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">Left</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">Text.pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">JSONPath -&gt; String -&gt; String
+</span><span class="hs-identifier hs-var">Aeson.formatError</span></span><span> </span><span class="annot"><span class="annottext">JSONPath
+</span><a href="#local-6989586621679067600"><span class="hs-identifier hs-var">path</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679067599"><span class="hs-identifier hs-var">err</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-81"></span><span>    </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Right</span></a></span><span> </span><span id="local-6989586621679067598"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067598"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a b. b -&gt; Either a b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">Right</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067598"><span class="hs-identifier hs-var">result</span></a></span><span>
+</span><span id="line-82"></span><span>
+</span><span id="line-83"></span><span class="hs-comment">-- | Decode text.</span><span>
+</span><span id="line-84"></span><span id="local-6989586621679067836"><span class="annot"><a href="Cretheus.Internal.Decode.html#fromText"><span class="hs-identifier hs-type">fromText</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067836"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Either</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="#local-6989586621679067836"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-85"></span><span id="fromText"><span class="annot"><span class="annottext">fromText :: forall a. Decoder a -&gt; Text -&gt; Either Text a
+</span><a href="Cretheus.Internal.Decode.html#fromText"><span class="hs-identifier hs-var hs-var">fromText</span></a></span></span><span> </span><span id="local-6989586621679067597"><span class="annot"><span class="annottext">Decoder a
+</span><a href="#local-6989586621679067597"><span class="hs-identifier hs-var">decoder</span></a></span></span><span> </span><span id="local-6989586621679067596"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679067596"><span class="hs-identifier hs-var">str</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-86"></span><span>  </span><span class="annot"><span class="annottext">forall a. Decoder a -&gt; ByteString -&gt; Either Text a
+</span><a href="Cretheus.Internal.Decode.html#fromBytes"><span class="hs-identifier hs-var">fromBytes</span></a></span><span> </span><span class="annot"><span class="annottext">Decoder a
+</span><a href="#local-6989586621679067597"><span class="hs-identifier hs-var">decoder</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; ByteString
+</span><span class="hs-identifier hs-var">Text.encodeUtf8</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679067596"><span class="hs-identifier hs-var">str</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span class="hs-comment">-- | Decode a value.</span><span>
+</span><span id="line-89"></span><span id="local-6989586621679067834"><span class="annot"><a href="Cretheus.Internal.Decode.html#fromValue"><span class="hs-identifier hs-type">fromValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067834"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Aeson.Value</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Either</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="#local-6989586621679067834"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-90"></span><span id="fromValue"><span class="annot"><span class="annottext">fromValue :: forall a. Decoder a -&gt; Value -&gt; Either Text a
+</span><a href="Cretheus.Internal.Decode.html#fromValue"><span class="hs-identifier hs-var hs-var">fromValue</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span id="local-6989586621679067594"><span class="annot"><span class="annottext">Value -&gt; Parser a
+</span><a href="#local-6989586621679067594"><span class="hs-identifier hs-var">decoder</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679067593"><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679067593"><span class="hs-identifier hs-var">val</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-91"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">forall a b. (a -&gt; Parser b) -&gt; a -&gt; Either String b
+</span><span class="hs-identifier hs-var">Aeson.parseEither</span></span><span> </span><span class="annot"><span class="annottext">Value -&gt; Parser a
+</span><a href="#local-6989586621679067594"><span class="hs-identifier hs-var">decoder</span></a></span><span> </span><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679067593"><span class="hs-identifier hs-var">val</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-92"></span><span>    </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Left</span></a></span><span> </span><span id="local-6989586621679067591"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679067591"><span class="hs-identifier hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a b. a -&gt; Either a b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">Left</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">Text.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679067591"><span class="hs-identifier hs-var">err</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-93"></span><span>    </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Right</span></a></span><span> </span><span id="local-6989586621679067590"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067590"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a b. b -&gt; Either a b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">Right</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067590"><span class="hs-identifier hs-var">result</span></a></span><span>
+</span><span id="line-94"></span><span>
+</span><span id="line-95"></span><span class="hs-comment">-- | A value decoder.</span><span>
+</span><span id="line-96"></span><span class="annot"><a href="Cretheus.Internal.Decode.html#value"><span class="hs-identifier hs-type">value</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Aeson.Value</span></span><span>
+</span><span id="line-97"></span><span id="value"><span class="annot"><span class="annottext">value :: Decoder Value
+</span><a href="Cretheus.Internal.Decode.html#value"><span class="hs-identifier hs-var hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-98"></span><span>  </span><span class="annot"><span class="annottext">forall a. (Value -&gt; Parser a) -&gt; Decoder a
+</span><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-var">Decoder</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. FromJSON a =&gt; Value -&gt; Parser a
+</span><span class="hs-identifier hs-var">Aeson.parseJSON</span></span><span>
+</span><span id="line-99"></span><span>
+</span><span id="line-100"></span><span class="hs-comment">-- | A bool decoder.</span><span>
+</span><span id="line-101"></span><span class="annot"><a href="Cretheus.Internal.Decode.html#bool"><span class="hs-identifier hs-type">bool</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/ghc-prim-0.8.0/src"><span class="hs-identifier hs-type">Bool</span></a></span><span>
+</span><span id="line-102"></span><span id="bool"><span class="annot"><span class="annottext">bool :: Decoder Bool
+</span><a href="Cretheus.Internal.Decode.html#bool"><span class="hs-identifier hs-var hs-var">bool</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-103"></span><span>  </span><span class="annot"><span class="annottext">forall a. (Value -&gt; Parser a) -&gt; Decoder a
+</span><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-var">Decoder</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. FromJSON a =&gt; Value -&gt; Parser a
+</span><span class="hs-identifier hs-var">Aeson.parseJSON</span></span><span>
+</span><span id="line-104"></span><span>
+</span><span id="line-105"></span><span class="hs-comment">-- | An int64 decoder.</span><span>
+</span><span id="line-106"></span><span class="annot"><a href="Cretheus.Internal.Decode.html#int64"><span class="hs-identifier hs-type">int64</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Int64</span></a></span><span>
+</span><span id="line-107"></span><span id="int64"><span class="annot"><span class="annottext">int64 :: Decoder Int64
+</span><a href="Cretheus.Internal.Decode.html#int64"><span class="hs-identifier hs-var hs-var">int64</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-108"></span><span>  </span><span class="annot"><span class="annottext">forall a. (Value -&gt; Parser a) -&gt; Decoder a
+</span><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-var">Decoder</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. FromJSON a =&gt; Value -&gt; Parser a
+</span><span class="hs-identifier hs-var">Aeson.parseJSON</span></span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="hs-comment">-- | A text decoder.</span><span>
+</span><span id="line-111"></span><span class="annot"><a href="Cretheus.Internal.Decode.html#text"><span class="hs-identifier hs-type">text</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-112"></span><span id="text"><span class="annot"><span class="annottext">text :: Decoder Text
+</span><a href="Cretheus.Internal.Decode.html#text"><span class="hs-identifier hs-var hs-var">text</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-113"></span><span>  </span><span class="annot"><span class="annottext">forall a. (Value -&gt; Parser a) -&gt; Decoder a
+</span><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-var">Decoder</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. FromJSON a =&gt; Value -&gt; Parser a
+</span><span class="hs-identifier hs-var">Aeson.parseJSON</span></span><span>
+</span><span id="line-114"></span><span>
+</span><span id="line-115"></span><span class="hs-comment">-- | A vector decoder.</span><span>
+</span><span id="line-116"></span><span id="local-6989586621679067828"><span class="annot"><a href="Cretheus.Internal.Decode.html#vector"><span class="hs-identifier hs-type">vector</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067828"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Vector</span></span><span> </span><span class="annot"><a href="#local-6989586621679067828"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-117"></span><span id="vector"><span class="annot"><span class="annottext">vector :: forall v. Decoder v -&gt; Decoder (Vector v)
+</span><a href="Cretheus.Internal.Decode.html#vector"><span class="hs-identifier hs-var hs-var">vector</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span id="local-6989586621679067585"><span class="annot"><span class="annottext">Value -&gt; Parser v
+</span><a href="#local-6989586621679067585"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-118"></span><span>  </span><span class="annot"><span class="annottext">forall a. (Value -&gt; Parser a) -&gt; Decoder a
+</span><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-var">Decoder</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. String -&gt; (Array -&gt; Parser a) -&gt; Value -&gt; Parser a
+</span><span class="hs-identifier hs-var">Aeson.withArray</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
+(Traversable t, Applicative f) =&gt;
+(a -&gt; f b) -&gt; t a -&gt; f (t b)
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">traverse</span></a></span><span> </span><span class="annot"><span class="annottext">Value -&gt; Parser v
+</span><a href="#local-6989586621679067585"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-119"></span><span>
+</span><span id="line-120"></span><span class="hs-comment">-- | A list decoder.</span><span>
+</span><span id="line-121"></span><span id="local-6989586621679067819"><span class="annot"><a href="Cretheus.Internal.Decode.html#list"><span class="hs-identifier hs-type">list</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067819"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679067819"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">]</span></span><span>
+</span><span id="line-122"></span><span id="list"><span class="annot"><span class="annottext">list :: forall v. Decoder v -&gt; Decoder [v]
+</span><a href="Cretheus.Internal.Decode.html#list"><span class="hs-identifier hs-var hs-var">list</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-123"></span><span>  </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">fmap</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Vector a -&gt; [a]
+</span><span class="hs-identifier hs-var">Vector.toList</span></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-operator hs-var">.</span></a></span><span> </span><span class="annot"><span class="annottext">forall v. Decoder v -&gt; Decoder (Vector v)
+</span><a href="Cretheus.Internal.Decode.html#vector"><span class="hs-identifier hs-var">vector</span></a></span><span>
+</span><span id="line-124"></span><span>
+</span><span id="line-125"></span><span class="hs-comment">-- | A map decoder.</span><span>
+</span><span id="line-126"></span><span id="local-6989586621679067813"><span class="annot"><a href="Cretheus.Internal.Decode.html#map"><span class="hs-identifier hs-type">map</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067813"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="#local-6989586621679067813"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-127"></span><span id="map"><span class="annot"><span class="annottext">map :: forall v. Decoder v -&gt; Decoder (Map Text v)
+</span><a href="Cretheus.Internal.Decode.html#map"><span class="hs-identifier hs-var hs-var">map</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span id="local-6989586621679067576"><span class="annot"><span class="annottext">Value -&gt; Parser v
+</span><a href="#local-6989586621679067576"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-128"></span><span>  </span><span class="annot"><span class="annottext">forall a. ObjectDecoder a -&gt; Decoder a
+</span><a href="Cretheus.Internal.Decode.html#object"><span class="hs-identifier hs-var">object</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. (Object -&gt; Parser a) -&gt; ObjectDecoder a
+</span><a href="Cretheus.Internal.Decode.html#ObjectDecoder"><span class="hs-identifier hs-var">ObjectDecoder</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
+(Traversable t, Applicative f) =&gt;
+(a -&gt; f b) -&gt; t a -&gt; f (t b)
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">traverse</span></a></span><span> </span><span class="annot"><span class="annottext">Value -&gt; Parser v
+</span><a href="#local-6989586621679067576"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-operator hs-var">.</span></a></span><span> </span><span class="annot"><span class="annottext">forall v. KeyMap v -&gt; Map Text v
+</span><span class="hs-identifier hs-var">Aeson.KeyMap.toMapText</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-129"></span><span>
+</span><span id="line-130"></span><span class="hs-comment">-- | Modify a decoder to also accept a @null@ value.</span><span>
+</span><span id="line-131"></span><span id="local-6989586621679067805"><span class="annot"><a href="Cretheus.Internal.Decode.html#nullable"><span class="hs-identifier hs-type">nullable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067805"><span class="hs-identifier hs-type">v</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Maybe</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067805"><span class="hs-identifier hs-type">v</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-132"></span><span id="nullable"><span class="annot"><span class="annottext">nullable :: forall v. Decoder v -&gt; Decoder (Maybe v)
+</span><a href="Cretheus.Internal.Decode.html#nullable"><span class="hs-identifier hs-var hs-var">nullable</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span id="local-6989586621679067572"><span class="annot"><span class="annottext">Value -&gt; Parser v
+</span><a href="#local-6989586621679067572"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-133"></span><span>  </span><span class="annot"><span class="annottext">forall a. (Value -&gt; Parser a) -&gt; Decoder a
+</span><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-var">Decoder</span></a></span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-134"></span><span>    </span><span class="annot"><span class="annottext">Value
+</span><span class="hs-identifier hs-var">Aeson.Null</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">pure</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. Maybe a
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">Nothing</span></a></span><span>
+</span><span id="line-135"></span><span>    </span><span id="local-6989586621679067570"><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679067570"><span class="hs-identifier hs-var">val</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; Maybe a
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">Just</span></a></span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-operator hs-var">&lt;$&gt;</span></a></span><span> </span><span class="annot"><span class="annottext">Value -&gt; Parser v
+</span><a href="#local-6989586621679067572"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679067570"><span class="hs-identifier hs-var">val</span></a></span><span>
+</span><span id="line-136"></span><span>
+</span><span id="line-137"></span><span class="hs-comment">-- | Refine a decoder with a predicate.</span><span>
+</span><span id="line-138"></span><span id="local-6989586621679067798"><span id="local-6989586621679067799"><span class="annot"><a href="Cretheus.Internal.Decode.html#refine"><span class="hs-identifier hs-type">refine</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679067799"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Either</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="#local-6989586621679067798"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067799"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067798"><span class="hs-identifier hs-type">b</span></a></span></span></span><span>
+</span><span id="line-139"></span><span id="refine"><span class="annot"><span class="annottext">refine :: forall a b. (a -&gt; Either Text b) -&gt; Decoder a -&gt; Decoder b
+</span><a href="Cretheus.Internal.Decode.html#refine"><span class="hs-identifier hs-var hs-var">refine</span></a></span></span><span> </span><span id="local-6989586621679067564"><span class="annot"><span class="annottext">a -&gt; Either Text b
+</span><a href="#local-6989586621679067564"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span id="local-6989586621679067563"><span class="annot"><span class="annottext">Value -&gt; Parser a
+</span><a href="#local-6989586621679067563"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-140"></span><span>  </span><span class="annot"><span class="annottext">forall a. (Value -&gt; Parser a) -&gt; Decoder a
+</span><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-var">Decoder</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679067562"><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679067562"><span class="hs-identifier hs-var">val</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-141"></span><span>    </span><span id="local-6989586621679067561"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067561"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Value -&gt; Parser a
+</span><a href="#local-6989586621679067563"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679067562"><span class="hs-identifier hs-var">val</span></a></span><span>
+</span><span id="line-142"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">a -&gt; Either Text b
+</span><a href="#local-6989586621679067564"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679067561"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-143"></span><span>      </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Left</span></a></span><span> </span><span id="local-6989586621679067560"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679067560"><span class="hs-identifier hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; m a
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">fail</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">Text.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679067560"><span class="hs-identifier hs-var">err</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-144"></span><span>      </span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Right</span></a></span><span> </span><span id="local-6989586621679067558"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621679067558"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-var">pure</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621679067558"><span class="hs-identifier hs-var">y</span></a></span><span>
+</span><span id="line-145"></span><span>
+</span><span id="line-146"></span><span class="hs-comment">-- | An object property decoder.</span><span>
+</span><span id="line-147"></span><span id="local-6989586621679067792"><span class="annot"><a href="Cretheus.Internal.Decode.html#property"><span class="hs-identifier hs-type">property</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Aeson.Key</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067792"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#ObjectDecoder"><span class="hs-identifier hs-type">ObjectDecoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067792"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-148"></span><span id="property"><span class="annot"><span class="annottext">property :: forall a. Key -&gt; Decoder a -&gt; ObjectDecoder a
+</span><a href="Cretheus.Internal.Decode.html#property"><span class="hs-identifier hs-var hs-var">property</span></a></span></span><span> </span><span id="local-6989586621679067557"><span class="annot"><span class="annottext">Key
+</span><a href="#local-6989586621679067557"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span id="local-6989586621679067556"><span class="annot"><span class="annottext">Value -&gt; Parser a
+</span><a href="#local-6989586621679067556"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-149"></span><span>  </span><span class="annot"><span class="annottext">forall a. (Object -&gt; Parser a) -&gt; ObjectDecoder a
+</span><a href="Cretheus.Internal.Decode.html#ObjectDecoder"><span class="hs-identifier hs-var">ObjectDecoder</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679067555"><span class="annot"><span class="annottext">Object
+</span><a href="#local-6989586621679067555"><span class="hs-identifier hs-var">o</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. (Value -&gt; Parser a) -&gt; Object -&gt; Key -&gt; Parser a
+</span><span class="hs-identifier hs-var">Aeson.explicitParseField</span></span><span> </span><span class="annot"><span class="annottext">Value -&gt; Parser a
+</span><a href="#local-6989586621679067556"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Object
+</span><a href="#local-6989586621679067555"><span class="hs-identifier hs-var">o</span></a></span><span> </span><span class="annot"><span class="annottext">Key
+</span><a href="#local-6989586621679067557"><span class="hs-identifier hs-var">k</span></a></span><span>
+</span><span id="line-150"></span><span>
+</span><span id="line-151"></span><span class="hs-comment">-- | An optional object property decoder.</span><span>
+</span><span id="line-152"></span><span id="local-6989586621679067789"><span class="annot"><a href="Cretheus.Internal.Decode.html#optionalProperty"><span class="hs-identifier hs-type">optionalProperty</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Aeson.Key</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067789"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#ObjectDecoder"><span class="hs-identifier hs-type">ObjectDecoder</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="../file:///home/mitchell/.ghcup/ghc/9.2.8/share/doc/ghc-9.2.8/html/libraries/base-4.16.4.0/src"><span class="hs-identifier hs-type">Maybe</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067789"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-153"></span><span id="optionalProperty"><span class="annot"><span class="annottext">optionalProperty :: forall a. Key -&gt; Decoder a -&gt; ObjectDecoder (Maybe a)
+</span><a href="Cretheus.Internal.Decode.html#optionalProperty"><span class="hs-identifier hs-var hs-var">optionalProperty</span></a></span></span><span> </span><span id="local-6989586621679067553"><span class="annot"><span class="annottext">Key
+</span><a href="#local-6989586621679067553"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span id="local-6989586621679067552"><span class="annot"><span class="annottext">Value -&gt; Parser a
+</span><a href="#local-6989586621679067552"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-154"></span><span>  </span><span class="annot"><span class="annottext">forall a. (Object -&gt; Parser a) -&gt; ObjectDecoder a
+</span><a href="Cretheus.Internal.Decode.html#ObjectDecoder"><span class="hs-identifier hs-var">ObjectDecoder</span></a></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679067551"><span class="annot"><span class="annottext">Object
+</span><a href="#local-6989586621679067551"><span class="hs-identifier hs-var">o</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">forall a. (Value -&gt; Parser a) -&gt; Object -&gt; Key -&gt; Parser (Maybe a)
+</span><span class="hs-identifier hs-var">Aeson.explicitParseFieldMaybe'</span></span><span> </span><span class="annot"><span class="annottext">Value -&gt; Parser a
+</span><a href="#local-6989586621679067552"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Object
+</span><a href="#local-6989586621679067551"><span class="hs-identifier hs-var">o</span></a></span><span> </span><span class="annot"><span class="annottext">Key
+</span><a href="#local-6989586621679067553"><span class="hs-identifier hs-var">k</span></a></span><span>
+</span><span id="line-155"></span><span>
+</span><span id="line-156"></span><span class="hs-comment">-- | An object decoder.</span><span>
+</span><span id="line-157"></span><span id="local-6989586621679067809"><span class="annot"><a href="Cretheus.Internal.Decode.html#object"><span class="hs-identifier hs-type">object</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#ObjectDecoder"><span class="hs-identifier hs-type">ObjectDecoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067809"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-type">Decoder</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679067809"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-158"></span><span id="object"><span class="annot"><span class="annottext">object :: forall a. ObjectDecoder a -&gt; Decoder a
+</span><a href="Cretheus.Internal.Decode.html#object"><span class="hs-identifier hs-var hs-var">object</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Cretheus.Internal.Decode.html#ObjectDecoder"><span class="hs-identifier hs-type">ObjectDecoder</span></a></span><span> </span><span id="local-6989586621679067549"><span class="annot"><span class="annottext">Object -&gt; Parser a
+</span><a href="#local-6989586621679067549"><span class="hs-identifier hs-var">o</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-159"></span><span>  </span><span class="annot"><span class="annottext">forall a. (Value -&gt; Parser a) -&gt; Decoder a
+</span><a href="Cretheus.Internal.Decode.html#Decoder"><span class="hs-identifier hs-var">Decoder</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a. String -&gt; (Object -&gt; Parser a) -&gt; Value -&gt; Parser a
+</span><span class="hs-identifier hs-var">Aeson.withObject</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&quot;</span></span><span> </span><span class="annot"><span class="annottext">Object -&gt; Parser a
+</span><a href="#local-6989586621679067549"><span class="hs-identifier hs-var">o</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-160"></span></pre></body></html>
