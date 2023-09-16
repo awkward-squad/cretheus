@@ -1,3 +1,6 @@
+{-# LANGUAGE MagicHash #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module Cretheus.Internal.Decode
   ( -- * Decoder
     Decoder,
@@ -28,12 +31,14 @@ where
 import Control.Monad qualified as Monad
 import Data.Aeson qualified as Aeson
 import Data.Aeson.KeyMap qualified as Aeson.KeyMap
-import Data.Aeson.Parser qualified as Aeson (eitherDecodeStrictWith, eitherDecodeWith)
 import Data.Aeson.Types qualified as Aeson
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as Lazy (ByteString)
+import Data.Coerce (coerce)
+import Data.Data (Proxy (..))
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
+import Data.Reflection (Reifies (reflect), reify)
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Text
@@ -66,19 +71,31 @@ newtype ObjectDecoder a
   = ObjectDecoder (Aeson.Object -> Aeson.Parser a)
   deriving (Applicative, Functor, Monad) via (GDecoder Aeson.Object)
 
+-- This didn't suck as bad before aeson-2.2, when they got rid of `eitherDecodeWith`...
+newtype D s a = D a
+
+instance Reifies s (Decoder a) => Aeson.FromJSON (D s a) where
+  parseJSON =
+    coerce
+      @(Decoder a)
+      @(Aeson.Value -> Aeson.Parser (D s a))
+      (reflect (Proxy :: Proxy s))
+
 -- | Decode bytes.
 fromBytes :: Decoder a -> ByteString -> Either Text a
-fromBytes (Decoder parser) bytes =
-  case Aeson.eitherDecodeStrictWith Aeson.json' (Aeson.iparse parser) bytes of
-    Left (path, err) -> Left (Text.pack (Aeson.formatError path err))
-    Right result -> Right result
+fromBytes decoder bytes =
+  reify decoder \(_ :: Proxy s) ->
+    case Aeson.eitherDecodeStrict bytes of
+      Left err -> Left (Text.pack err)
+      Right (D result :: D s a) -> Right result
 
 -- | Decode lazy bytes.
 fromLazyBytes :: Decoder a -> Lazy.ByteString -> Either Text a
-fromLazyBytes (Decoder parser) bytes =
-  case Aeson.eitherDecodeWith Aeson.json' (Aeson.iparse parser) bytes of
-    Left (path, err) -> Left (Text.pack (Aeson.formatError path err))
-    Right result -> Right result
+fromLazyBytes decoder bytes =
+  reify decoder \(_ :: Proxy s) ->
+    case Aeson.eitherDecode bytes of
+      Left err -> Left (Text.pack err)
+      Right (D result :: D s a) -> Right result
 
 -- | Decode text.
 fromText :: Decoder a -> Text -> Either Text a
