@@ -1,7 +1,6 @@
 module Cretheus.Internal.Encode
   ( -- * Encoding
     Encoding,
-    SomeEncoding (..),
     asBytes,
     asText,
     asValue,
@@ -14,7 +13,6 @@ module Cretheus.Internal.Encode
     null,
     list,
     vector,
-    something,
 
     -- ** Object encoders
     PropertyEncoding,
@@ -29,7 +27,6 @@ import Data.Aeson.Encoding qualified as Aeson
 import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as ByteString.Lazy
-import Data.Coerce (coerce)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding qualified as Text
@@ -38,125 +35,100 @@ import Data.Vector qualified as Vector
 import Prelude hiding (null)
 
 -- | An encoding of a JSON value.
-class Encoding a where
-  bool_ :: Bool -> a
-  bool_ = undefined
-  int_ :: Int64 -> a
-  int_ = undefined
-  text_ :: Text -> a
-  text_ = undefined
-  list_ :: [a] -> a
-  list_ = undefined
-  vector_ :: Vector a -> a
-  vector_ = undefined
-  object_ :: [Prop a] -> a
-  object_ = undefined
-  null_ :: a
-  null_ = undefined
+data Encoding
+  = Encoding Aeson.Encoding Aeson.Value
 
--- The only purpose of these awkward newtypes: to prevent the user seeing 'instance Encoding Value' and
--- 'instance Encoding Encoding' in the haddocks. The user doesn't need to know the instances (they just use asBytes and
--- friends), so the docs are cleaner with this information hidden.
-newtype V = V Aeson.Value
+encode :: (a -> Aeson.Encoding) -> (a -> Aeson.Value) -> a -> Encoding
+encode f g x =
+  Encoding (f x) (g x)
 
-newtype E = E Aeson.Encoding
-
-instance Encoding V where
-  bool_ = coerce @(Bool -> Aeson.Value) Aeson.toJSON
-  int_ = coerce @(Int64 -> Aeson.Value) Aeson.toJSON
-  text_ = coerce @(Text -> Aeson.Value) Aeson.toJSON
-  list_ = coerce @([Aeson.Value] -> Aeson.Value) Aeson.toJSON
-  vector_ = coerce @(Vector Aeson.Value -> Aeson.Value) Aeson.Array
-  object_ = coerce @([Prop Aeson.Value] -> Aeson.Value) (Aeson.Object . Aeson.KeyMap.fromList . map (\(Prop k v) -> (k, v)))
-  null_ = V Aeson.Null
-
-instance Encoding E where
-  bool_ = coerce @(Bool -> Aeson.Encoding) Aeson.bool
-  int_ = coerce @(Int64 -> Aeson.Encoding) Aeson.int64
-  text_ = coerce @(Text -> Aeson.Encoding) Aeson.text
-  list_ = coerce @([Aeson.Encoding] -> Aeson.Encoding) (Aeson.list id)
-  vector_ = coerce @(Vector Aeson.Encoding -> Aeson.Encoding) (Aeson.list id . Vector.toList)
-  object_ = coerce @([Prop Aeson.Encoding] -> Aeson.Encoding) (Aeson.pairs . foldMap (\(Prop k v) -> Aeson.pair k v))
-  null_ = E Aeson.null_
-
-data SomeEncoding
-  = SomeEncoding (forall a. (Encoding a) => a)
+asAesonEncoding :: Encoding -> Aeson.Encoding
+asAesonEncoding (Encoding encoding _) =
+  encoding
 
 -- | Interpret an encoding as bytes.
-asBytes :: (forall a. (Encoding a) => a) -> ByteString
-asBytes encoding =
-  ByteString.Lazy.toStrict (Aeson.encodingToLazyByteString (coerce @E @Aeson.Encoding encoding))
+asBytes :: Encoding -> ByteString
+asBytes =
+  ByteString.Lazy.toStrict . Aeson.encodingToLazyByteString . asAesonEncoding
 
 -- | Interpret an encoding as text.
-asText :: (forall a. (Encoding a) => a) -> Text
-asText encoding =
-  Text.decodeUtf8 (asBytes encoding)
+asText :: Encoding -> Text
+asText =
+  Text.decodeUtf8 . asBytes
 
 -- | Interpret an encoding as a value.
-asValue :: (forall a. (Encoding a) => a) -> Aeson.Value
-asValue encoding =
-  coerce @V encoding
+asValue :: Encoding -> Aeson.Value
+asValue (Encoding _ value) =
+  value
 
 -- | A bool encoder.
-bool :: (Encoding a) => Bool -> a
-bool = bool_
+bool :: Bool -> Encoding
+bool =
+  encode Aeson.bool Aeson.toJSON
 
 -- | An int encoder.
-int :: (Encoding a) => Int -> a
-int = int_ . fromIntegral @Int @Int64
+int :: Int -> Encoding
+int =
+  int64 . fromIntegral @Int @Int64
 
 -- | An int64 encoder.
-int64 :: (Encoding a) => Int64 -> a
-int64 = int_
+int64 :: Int64 -> Encoding
+int64 =
+  encode Aeson.int64 Aeson.toJSON
 
 -- | A text encoder.
-text :: (Encoding a) => Text -> a
-text = text_
+text :: Text -> Encoding
+text =
+  encode Aeson.text Aeson.toJSON
 
 -- | A null encoder.
-null :: (Encoding a) => a
-null = null_
+null :: Encoding
+null =
+  Encoding Aeson.null_ Aeson.Null
 
 -- | A list encoder.
-list :: (Encoding a) => [a] -> a
-list = list_
+list :: [Encoding] -> Encoding
+list =
+  encode (Aeson.list id . map asAesonEncoding) (Aeson.toJSON . map asValue)
 
 -- | A vector encoder.
-vector :: (Encoding a) => Vector a -> a
-vector = vector_
-
--- | A something encoder.
-something :: (Encoding a) => SomeEncoding -> a
-something (SomeEncoding x) = x
+vector :: Vector Encoding -> Encoding
+vector =
+  encode (Aeson.list id . Vector.toList . Vector.map asAesonEncoding) (Aeson.Array . Vector.map asValue)
 
 -- | An encoding of a JSON object property.
-data PropertyEncoding a
-  = Algo !(Prop a)
+data PropertyEncoding
+  = Algo !Prop
   | Nada
 
-data Prop a
-  = Prop !Aeson.Key !a
+data Prop
+  = Prop !Aeson.Key !Encoding
+
+addProperty :: PropertyEncoding -> [Prop] -> [Prop]
+addProperty = \case
+  Algo prop -> (prop :)
+  Nada -> id
 
 -- | An object encoder.
-object :: (Encoding a) => [PropertyEncoding a] -> a
-object = object_ . props
+object :: [PropertyEncoding] -> Encoding
+object =
+  encode toEncoding toValue . foldr addProperty []
   where
-    props :: [PropertyEncoding a] -> [Prop a]
-    props =
-      foldr
-        ( \case
-            Algo prop -> (prop :)
-            Nada -> id
-        )
-        []
+    toEncoding :: [Prop] -> Aeson.Encoding
+    toEncoding =
+      Aeson.pairs . foldMap (\(Prop k v) -> Aeson.pair k (asAesonEncoding v))
+
+    toValue :: [Prop] -> Aeson.Value
+    toValue =
+      Aeson.Object . Aeson.KeyMap.fromList . map (\(Prop k v) -> (k, asValue v))
 
 -- | An object property encoder.
-property :: Aeson.Key -> a -> PropertyEncoding a
+property :: Aeson.Key -> Encoding -> PropertyEncoding
 property key val =
   Algo (Prop key val)
 
 -- | A optional object property encoder.
-optionalProperty :: Aeson.Key -> Maybe a -> PropertyEncoding a
+optionalProperty :: Aeson.Key -> Maybe Encoding -> PropertyEncoding
 optionalProperty key = \case
   Nothing -> Nada
   Just val -> Algo (Prop key val)
