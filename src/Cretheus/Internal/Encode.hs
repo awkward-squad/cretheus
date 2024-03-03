@@ -34,7 +34,7 @@ import Data.Vector (Vector)
 import Data.Vector qualified as Vector
 import Prelude hiding (null)
 
--- | An encoding of a JSON value.
+-- | A value encoding.
 data Encoding
   = Encoding Aeson.Encoding Aeson.Value
 
@@ -96,7 +96,7 @@ vector :: Vector Encoding -> Encoding
 vector =
   encode (Aeson.list id . Vector.toList . Vector.map asAesonEncoding) (Aeson.Array . Vector.map asValue)
 
--- | An encoding of a JSON object property.
+-- | An object property encoding.
 data PropertyEncoding
   = Algo !Prop
   | Nada

@@ -61,7 +61,7 @@ instance Monad (GDecoder a) where
       mx i >>= \x ->
         unGDecoder (f x) i
 
--- | A decoder.
+-- | A value decoder.
 newtype Decoder a
   = Decoder (Aeson.Value -> Aeson.Parser a)
   deriving (Applicative, Functor, Monad) via (GDecoder Aeson.Value)
@@ -74,7 +74,7 @@ newtype ObjectDecoder a
 -- This didn't suck as bad before aeson-2.2, when they got rid of `eitherDecodeWith`...
 newtype D s a = D a
 
-instance Reifies s (Decoder a) => Aeson.FromJSON (D s a) where
+instance (Reifies s (Decoder a)) => Aeson.FromJSON (D s a) where
   parseJSON =
     coerce
       @(Decoder a)
