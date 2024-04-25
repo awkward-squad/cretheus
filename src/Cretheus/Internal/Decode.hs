@@ -2,48 +2,47 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Cretheus.Internal.Decode
-  ( -- * Decoder
-    Decoder,
+  ( Decoder,
+    ObjectDecoder,
+    bool,
     fromBytes,
     fromLazyBytes,
     fromText,
     fromValue,
-
-    -- * Decoders
-    value,
-    bool,
+    int,
+    int32,
     int64,
-    text,
-    vector,
+    float32,
+    float64,
     list,
-    Cretheus.Internal.Decode.map,
+    map,
     nullable,
-    refine,
-
-    -- ** Object decoders
-    ObjectDecoder,
     object,
-    property,
     optionalProperty,
+    property,
+    refine,
+    text,
+    value,
+    vector,
   )
 where
 
 import Control.Monad qualified as Monad
 import Data.Aeson qualified as Aeson
-import Data.Aeson.KeyMap qualified as Aeson.KeyMap
+import Data.Aeson.KeyMap qualified as Aeson (KeyMap)
 import Data.Aeson.Types qualified as Aeson
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as Lazy (ByteString)
 import Data.Coerce (coerce)
 import Data.Data (Proxy (..))
-import Data.Int (Int64)
-import Data.Map.Strict (Map)
+import Data.Int (Int32, Int64)
 import Data.Reflection (Reifies (reflect), reify)
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Text
 import Data.Vector (Vector)
 import Data.Vector qualified as Vector
+import Prelude hiding (map)
 
 newtype GDecoder a b = GDecoder
   { unGDecoder :: a -> Aeson.Parser b
@@ -75,6 +74,7 @@ newtype ObjectDecoder a
 newtype D s a = D a
 
 instance (Reifies s (Decoder a)) => Aeson.FromJSON (D s a) where
+  parseJSON :: Aeson.Value -> Aeson.Parser (D s a)
   parseJSON =
     coerce
       @(Decoder a)
@@ -119,9 +119,29 @@ bool :: Decoder Bool
 bool =
   Decoder Aeson.parseJSON
 
--- | An int64 decoder.
+-- | An int decoder.
+int :: Decoder Int
+int =
+  Decoder Aeson.parseJSON
+
+-- | A 32-bit int decoder.
+int32 :: Decoder Int32
+int32 =
+  Decoder Aeson.parseJSON
+
+-- | A 64-bit int decoder.
 int64 :: Decoder Int64
 int64 =
+  Decoder Aeson.parseJSON
+
+-- | A 32-bit float decoder.
+float32 :: Decoder Float
+float32 =
+  Decoder Aeson.parseJSON
+
+-- | A 64-bit float decoder.
+float64 :: Decoder Double
+float64 =
   Decoder Aeson.parseJSON
 
 -- | A text decoder.
@@ -140,9 +160,9 @@ list =
   fmap Vector.toList . vector
 
 -- | A map decoder.
-map :: Decoder v -> Decoder (Map Text v)
+map :: Decoder v -> Decoder (Aeson.KeyMap v)
 map (Decoder v) =
-  object (ObjectDecoder (traverse v . Aeson.KeyMap.toMapText))
+  object (ObjectDecoder (traverse v))
 
 -- | Modify a decoder to also accept a @null@ value.
 nullable :: Decoder v -> Decoder (Maybe v)

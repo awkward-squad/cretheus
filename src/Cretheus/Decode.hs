@@ -8,11 +8,13 @@ module Cretheus.Decode
     -- * Basic decoders
     value,
     bool,
+    int,
+    int32,
     int64,
     text,
-    vector,
     list,
-    Cretheus.Internal.Decode.map,
+    vector,
+    map,
     nullable,
     refine,
 
@@ -24,3 +26,4 @@ module Cretheus.Decode
 where
 
 import Cretheus.Internal.Decode
+import Prelude hiding (map)
