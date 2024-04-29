@@ -2,8 +2,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Cretheus.Internal.Decode
-  ( Decoder (..),
-    ObjectDecoder (..),
+  ( Decoder,
+    ObjectDecoder,
     bool,
     fromBytes,
     fromLazyBytes,

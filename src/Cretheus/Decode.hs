@@ -1,6 +1,6 @@
 module Cretheus.Decode
   ( -- * Decoding
-    Decoder (..),
+    Decoder,
     fromBytes,
     fromLazyBytes,
     fromText,
@@ -29,7 +29,7 @@ module Cretheus.Decode
     nullable,
 
     -- ** Object decoders
-    ObjectDecoder (..),
+    ObjectDecoder,
     object,
     property,
     optionalProperty,
