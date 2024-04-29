@@ -1,29 +1,45 @@
 module Cretheus.Decode
-  ( -- * Decoder
+  ( -- * Decoding
+    Decoder (..),
     fromBytes,
     fromLazyBytes,
     fromText,
     fromValue,
 
-    -- * Basic decoders
-    value,
+    -- * Decoders
+
+    -- ** Boolean decoders
     bool,
+
+    -- ** Number decoders
     int,
     int32,
     int64,
-    float32,
-    float64,
+    float,
+    double,
+
+    -- ** String decoders
     text,
+
+    -- ** Array decoders
     list,
     vector,
-    map,
+
+    -- ** Null decoders
     nullable,
-    refine,
 
     -- ** Object decoders
+    ObjectDecoder (..),
     object,
     property,
     optionalProperty,
+    map,
+
+    -- ** Value decoders
+    value,
+
+    -- ** Decoder refinement
+    refine,
   )
 where
 

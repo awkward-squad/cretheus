@@ -38,7 +38,6 @@ library
     LambdaCase
   default-language: GHC2021
   exposed-modules:
-    Cretheus
     Cretheus.Decode
     Cretheus.Encode
   ghc-options:

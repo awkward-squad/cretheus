@@ -2,8 +2,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Cretheus.Internal.Decode
-  ( Decoder,
-    ObjectDecoder,
+  ( Decoder (..),
+    ObjectDecoder (..),
     bool,
     fromBytes,
     fromLazyBytes,
@@ -12,8 +12,8 @@ module Cretheus.Internal.Decode
     int,
     int32,
     int64,
-    float32,
-    float64,
+    float,
+    double,
     list,
     map,
     nullable,
@@ -135,13 +135,13 @@ int64 =
   Decoder Aeson.parseJSON
 
 -- | A 32-bit float decoder.
-float32 :: Decoder Float
-float32 =
+float :: Decoder Float
+float =
   Decoder Aeson.parseJSON
 
 -- | A 64-bit float decoder.
-float64 :: Decoder Double
-float64 =
+double :: Decoder Double
+double =
   Decoder Aeson.parseJSON
 
 -- | A text decoder.
@@ -164,7 +164,7 @@ map :: Decoder v -> Decoder (Aeson.KeyMap v)
 map (Decoder v) =
   object (ObjectDecoder (traverse v))
 
--- | Modify a decoder to also accept a @null@ value.
+-- | A nullable decoder.
 nullable :: Decoder v -> Decoder (Maybe v)
 nullable (Decoder f) =
   Decoder \case

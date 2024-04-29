@@ -1,27 +1,22 @@
 module Cretheus.Internal.Encode
-  ( -- * Encoding
-    Encoding,
+  ( Encoding,
+    PropertyEncoding,
     asBytes,
     asText,
     asValue,
-
-    -- * Basic encoders
     bool,
+    double,
+    float,
     int,
     int32,
     int64,
-    float32,
-    float64,
-    text,
-    null,
     list,
-    vector,
-
-    -- ** Object encoders
-    PropertyEncoding,
+    null,
     object,
-    property,
     optionalProperty,
+    property,
+    text,
+    vector,
   )
 where
 
@@ -85,13 +80,13 @@ int64 =
   encode Aeson.int64 Aeson.toJSON
 
 -- | A 32-bit float encoder.
-float32 :: Float -> Encoding
-float32 =
+float :: Float -> Encoding
+float =
   encode Aeson.float Aeson.toJSON
 
 -- | A 32-bit float encoder.
-float64 :: Double -> Encoding
-float64 =
+double :: Double -> Encoding
+double =
   encode Aeson.double Aeson.toJSON
 
 -- | A text encoder.
