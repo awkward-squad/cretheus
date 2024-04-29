@@ -8,7 +8,10 @@ module Cretheus.Internal.Encode
     -- * Basic encoders
     bool,
     int,
+    int32,
     int64,
+    float32,
+    float64,
     text,
     null,
     list,
@@ -27,7 +30,7 @@ import Data.Aeson.Encoding qualified as Aeson
 import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as ByteString.Lazy
-import Data.Int (Int64)
+import Data.Int (Int32, Int64)
 import Data.Text (Text)
 import Data.Text.Encoding qualified as Text
 import Data.Vector (Vector)
@@ -71,10 +74,25 @@ int :: Int -> Encoding
 int =
   int64 . fromIntegral @Int @Int64
 
--- | An int64 encoder.
+-- | A 32-bit int encoder.
+int32 :: Int32 -> Encoding
+int32 =
+  encode Aeson.int32 Aeson.toJSON
+
+-- | A 64-bit int encoder.
 int64 :: Int64 -> Encoding
 int64 =
   encode Aeson.int64 Aeson.toJSON
+
+-- | A 32-bit float encoder.
+float32 :: Float -> Encoding
+float32 =
+  encode Aeson.float Aeson.toJSON
+
+-- | A 32-bit float encoder.
+float64 :: Double -> Encoding
+float64 =
+  encode Aeson.double Aeson.toJSON
 
 -- | A text encoder.
 text :: Text -> Encoding
