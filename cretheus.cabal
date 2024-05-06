@@ -40,6 +40,7 @@ library
     OverloadedRecordDot
   default-language: GHC2021
   exposed-modules:
+    Cretheus.Codec
     Cretheus.Decode
     Cretheus.Encode
   ghc-options:
