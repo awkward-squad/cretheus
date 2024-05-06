@@ -36,8 +36,8 @@ import Prelude hiding (null)
 data Encoding
   = Encoding Aeson.Encoding Aeson.Value
 
-encode :: (a -> Aeson.Encoding) -> (a -> Aeson.Value) -> a -> Encoding
-encode f g x =
+mk :: (a -> Aeson.Encoding) -> (a -> Aeson.Value) -> a -> Encoding
+mk f g x =
   Encoding (f x) (g x)
 
 asAesonEncoding :: Encoding -> Aeson.Encoding
@@ -62,7 +62,7 @@ asValue (Encoding _ value) =
 -- | A bool encoder.
 bool :: Bool -> Encoding
 bool =
-  encode Aeson.bool Aeson.toJSON
+  mk Aeson.bool Aeson.toJSON
 
 -- | An int encoder.
 int :: Int -> Encoding
@@ -72,27 +72,27 @@ int =
 -- | A 32-bit int encoder.
 int32 :: Int32 -> Encoding
 int32 =
-  encode Aeson.int32 Aeson.toJSON
+  mk Aeson.int32 Aeson.toJSON
 
 -- | A 64-bit int encoder.
 int64 :: Int64 -> Encoding
 int64 =
-  encode Aeson.int64 Aeson.toJSON
+  mk Aeson.int64 Aeson.toJSON
 
 -- | A 32-bit float encoder.
 float :: Float -> Encoding
 float =
-  encode Aeson.float Aeson.toJSON
+  mk Aeson.float Aeson.toJSON
 
 -- | A 32-bit float encoder.
 double :: Double -> Encoding
 double =
-  encode Aeson.double Aeson.toJSON
+  mk Aeson.double Aeson.toJSON
 
 -- | A text encoder.
 text :: Text -> Encoding
 text =
-  encode Aeson.text Aeson.toJSON
+  mk Aeson.text Aeson.toJSON
 
 -- | A null encoder.
 null :: Encoding
@@ -102,12 +102,12 @@ null =
 -- | A list encoder.
 list :: [Encoding] -> Encoding
 list =
-  encode (Aeson.list id . map asAesonEncoding) (Aeson.toJSON . map asValue)
+  mk (Aeson.list id . map asAesonEncoding) (Aeson.toJSON . map asValue)
 
 -- | A vector encoder.
 vector :: Vector Encoding -> Encoding
 vector =
-  encode (Aeson.list id . Vector.toList . Vector.map asAesonEncoding) (Aeson.Array . Vector.map asValue)
+  mk (Aeson.list id . Vector.toList . Vector.map asAesonEncoding) (Aeson.Array . Vector.map asValue)
 
 -- | An object property encoding.
 data PropertyEncoding
@@ -125,7 +125,7 @@ addProperty = \case
 -- | An object encoder.
 object :: [PropertyEncoding] -> Encoding
 object =
-  encode toEncoding toValue . foldr addProperty []
+  mk toEncoding toValue . foldr addProperty []
   where
     toEncoding :: [Prop] -> Aeson.Encoding
     toEncoding =

@@ -1,6 +1,3 @@
-{-# LANGUAGE MagicHash #-}
-{-# LANGUAGE UndecidableInstances #-}
-
 module Cretheus.Internal.Decode
   ( Decoder,
     ObjectDecoder,
