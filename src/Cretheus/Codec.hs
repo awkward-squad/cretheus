@@ -94,12 +94,12 @@ utcTime =
 -- | A list codec.
 list :: Codec a -> Codec [a]
 list codec =
-  Codec (Decode.list codec.decoder) (Encode.listOf codec.encoder)
+  Codec (Decode.list codec.decoder) (Encode.list codec.encoder)
 
 -- | A vector codec.
 vector :: Codec a -> Codec (Vector a)
 vector codec =
-  Codec (Decode.vector codec.decoder) (Encode.vectorOf codec.encoder)
+  Codec (Decode.vector codec.decoder) (Encode.vector codec.encoder)
 
 -- | An object codec.
 object :: ObjectCodec a -> Codec a

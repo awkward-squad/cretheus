@@ -13,7 +13,6 @@ module Cretheus.Internal.Encode
     int32,
     int64,
     list,
-    listOf,
     null,
     object,
     optionalProperty,
@@ -21,7 +20,6 @@ module Cretheus.Internal.Encode
     text,
     utcTime,
     vector,
-    vectorOf,
   )
 where
 
@@ -123,30 +121,20 @@ null =
   Encoding Aeson.null_ Aeson.Null
 
 -- | A list encoder.
-list :: [Encoding] -> Encoding
-list =
+list :: (a -> Encoding) -> [a] -> Encoding
+list f =
   mk toAesonEncoding toAesonValue
   where
-    toAesonEncoding = Aeson.list id . map asAesonEncoding
-    toAesonValue = Aeson.toJSON . map asValue
-
--- | A list encoder.
-listOf :: (a -> Encoding) -> [a] -> Encoding
-listOf f =
-  list . map f
+    toAesonEncoding = Aeson.list (asAesonEncoding . f)
+    toAesonValue = Aeson.toJSON . map (asValue . f)
 
 -- | A vector encoder.
-vector :: Vector Encoding -> Encoding
-vector =
+vector :: (a -> Encoding) -> Vector a -> Encoding
+vector f =
   mk toAesonEncoding toAesonValue
   where
-    toAesonEncoding = Aeson.list id . Vector.toList . Vector.map asAesonEncoding
-    toAesonValue = Aeson.Array . Vector.map asValue
-
--- | A vector encoder.
-vectorOf :: (a -> Encoding) -> Vector a -> Encoding
-vectorOf f =
-  vector . Vector.map f
+    toAesonEncoding = Aeson.list (asAesonEncoding . f) . Vector.toList
+    toAesonValue = Aeson.Array . Vector.map (asValue . f)
 
 -- | An object property encoding.
 data PropertyEncoding
