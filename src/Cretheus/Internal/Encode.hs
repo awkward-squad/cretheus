@@ -11,12 +11,14 @@ module Cretheus.Internal.Encode
     int32,
     int64,
     list,
+    listOf,
     null,
     object,
     optionalProperty,
     property,
     text,
     vector,
+    vectorOf,
   )
 where
 
@@ -102,12 +104,28 @@ null =
 -- | A list encoder.
 list :: [Encoding] -> Encoding
 list =
-  mk (Aeson.list id . map asAesonEncoding) (Aeson.toJSON . map asValue)
+  mk toAesonEncoding toAesonValue
+  where
+    toAesonEncoding = Aeson.list id . map asAesonEncoding
+    toAesonValue = Aeson.toJSON . map asValue
+
+-- | A list encoder.
+listOf :: (a -> Encoding) -> [a] -> Encoding
+listOf f =
+  list . map f
 
 -- | A vector encoder.
 vector :: Vector Encoding -> Encoding
 vector =
-  mk (Aeson.list id . Vector.toList . Vector.map asAesonEncoding) (Aeson.Array . Vector.map asValue)
+  mk toAesonEncoding toAesonValue
+  where
+    toAesonEncoding = Aeson.list id . Vector.toList . Vector.map asAesonEncoding
+    toAesonValue = Aeson.Array . Vector.map asValue
+
+-- | A vector encoder.
+vectorOf :: (a -> Encoding) -> Vector a -> Encoding
+vectorOf f =
+  vector . Vector.map f
 
 -- | An object property encoding.
 data PropertyEncoding
@@ -117,6 +135,22 @@ data PropertyEncoding
 data Prop
   = Prop !Aeson.Key !Encoding
 
+propToAesonSeries :: Prop -> Aeson.Series
+propToAesonSeries (Prop k v) =
+  Aeson.pair k (asAesonEncoding v)
+
+propsToAesonEncoding :: [Prop] -> Aeson.Encoding
+propsToAesonEncoding =
+  Aeson.pairs . foldMap propToAesonSeries
+
+propToAesonKeyValue :: Prop -> (Aeson.Key, Aeson.Value)
+propToAesonKeyValue (Prop k v) =
+  (k, asValue v)
+
+propsToAesonValue :: [Prop] -> Aeson.Value
+propsToAesonValue =
+  Aeson.Object . Aeson.KeyMap.fromList . map propToAesonKeyValue
+
 addProperty :: PropertyEncoding -> [Prop] -> [Prop]
 addProperty = \case
   Algo prop -> (prop :)
@@ -125,15 +159,7 @@ addProperty = \case
 -- | An object encoder.
 object :: [PropertyEncoding] -> Encoding
 object =
-  mk toEncoding toValue . foldr addProperty []
-  where
-    toEncoding :: [Prop] -> Aeson.Encoding
-    toEncoding =
-      Aeson.pairs . foldMap (\(Prop k v) -> Aeson.pair k (asAesonEncoding v))
-
-    toValue :: [Prop] -> Aeson.Value
-    toValue =
-      Aeson.Object . Aeson.KeyMap.fromList . map (\(Prop k v) -> (k, asValue v))
+  mk propsToAesonEncoding propsToAesonValue . foldr addProperty []
 
 -- | An object property encoder.
 property :: Aeson.Key -> Encoding -> PropertyEncoding

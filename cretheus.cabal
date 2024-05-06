@@ -35,7 +35,9 @@ library
     BlockArguments
     DerivingStrategies
     DerivingVia
+    DuplicateRecordFields
     LambdaCase
+    OverloadedRecordDot
   default-language: GHC2021
   exposed-modules:
     Cretheus.Decode

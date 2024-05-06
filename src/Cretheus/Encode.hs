@@ -22,7 +22,9 @@ module Cretheus.Encode
 
     -- ** Array encoders
     list,
+    listOf,
     vector,
+    vectorOf,
 
     -- ** Object encoders
     PropertyEncoding,

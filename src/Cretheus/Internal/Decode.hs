@@ -13,6 +13,7 @@ module Cretheus.Internal.Decode
     double,
     list,
     map,
+    null,
     nullable,
     object,
     optionalProperty,
@@ -39,7 +40,7 @@ import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Text
 import Data.Vector (Vector)
 import Data.Vector qualified as Vector
-import Prelude hiding (map)
+import Prelude hiding (map, null)
 
 newtype GDecoder a b = GDecoder
   { unGDecoder :: a -> Aeson.Parser b
@@ -161,6 +162,28 @@ map :: Decoder v -> Decoder (Aeson.KeyMap v)
 map (Decoder v) =
   object (ObjectDecoder (traverse v))
 
+-- | An object property decoder.
+property :: Aeson.Key -> Decoder a -> ObjectDecoder a
+property k (Decoder v) =
+  ObjectDecoder \o -> Aeson.explicitParseField v o k
+
+-- | An optional object property decoder.
+optionalProperty :: Aeson.Key -> Decoder a -> ObjectDecoder (Maybe a)
+optionalProperty k (Decoder v) =
+  ObjectDecoder \o -> Aeson.explicitParseFieldMaybe' v o k
+
+-- | An object decoder.
+object :: ObjectDecoder a -> Decoder a
+object (ObjectDecoder o) =
+  Decoder (Aeson.withObject "" o)
+
+-- | A null decoder.
+null :: Decoder ()
+null =
+  Decoder \case
+    Aeson.Null -> pure ()
+    _ -> fail "expected null"
+
 -- | A nullable decoder.
 nullable :: Decoder v -> Decoder (Maybe v)
 nullable (Decoder f) =
@@ -176,18 +199,3 @@ refine p (Decoder f) =
     case p x of
       Left err -> fail (Text.unpack err)
       Right y -> pure y
-
--- | An object property decoder.
-property :: Aeson.Key -> Decoder a -> ObjectDecoder a
-property k (Decoder v) =
-  ObjectDecoder \o -> Aeson.explicitParseField v o k
-
--- | An optional object property decoder.
-optionalProperty :: Aeson.Key -> Decoder a -> ObjectDecoder (Maybe a)
-optionalProperty k (Decoder v) =
-  ObjectDecoder \o -> Aeson.explicitParseFieldMaybe' v o k
-
--- | An object decoder.
-object :: ObjectDecoder a -> Decoder a
-object (ObjectDecoder o) =
-  Decoder (Aeson.withObject "" o)
