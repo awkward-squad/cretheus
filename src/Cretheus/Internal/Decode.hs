@@ -20,6 +20,7 @@ module Cretheus.Internal.Decode
     property,
     refine,
     text,
+    utcTime,
     value,
     vector,
   )
@@ -38,6 +39,7 @@ import Data.Reflection (Reifies (reflect), reify)
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Text
+import Data.Time (UTCTime)
 import Data.Vector (Vector)
 import Data.Vector qualified as Vector
 import Prelude hiding (map, null)
@@ -145,6 +147,11 @@ double =
 -- | A text decoder.
 text :: Decoder Text
 text =
+  Decoder Aeson.parseJSON
+
+-- | A timestamp decoder (ISO 8601).
+utcTime :: Decoder UTCTime
+utcTime =
   Decoder Aeson.parseJSON
 
 -- | A vector decoder.

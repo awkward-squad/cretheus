@@ -20,6 +20,7 @@ module Cretheus.Decode
 
     -- ** String decoders
     text,
+    utcTime,
 
     -- ** Array decoders
     list,

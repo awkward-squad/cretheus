@@ -17,6 +17,7 @@ module Cretheus.Internal.Encode
     optionalProperty,
     property,
     text,
+    utcTime,
     vector,
     vectorOf,
   )
@@ -30,6 +31,7 @@ import Data.ByteString.Lazy qualified as ByteString.Lazy
 import Data.Int (Int32, Int64)
 import Data.Text (Text)
 import Data.Text.Encoding qualified as Text
+import Data.Time (UTCTime)
 import Data.Vector (Vector)
 import Data.Vector qualified as Vector
 import Prelude hiding (null)
@@ -95,6 +97,11 @@ double =
 text :: Text -> Encoding
 text =
   mk Aeson.text Aeson.toJSON
+
+-- | A timestamp encoder (ISO 8601).
+utcTime :: UTCTime -> Encoding
+utcTime =
+  mk Aeson.utcTime Aeson.toJSON
 
 -- | A null encoder.
 null :: Encoding

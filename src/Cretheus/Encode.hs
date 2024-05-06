@@ -19,6 +19,7 @@ module Cretheus.Encode
 
     -- ** String encoders
     text,
+    utcTime,
 
     -- ** Array encoders
     list,

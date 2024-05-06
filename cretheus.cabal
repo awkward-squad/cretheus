@@ -30,6 +30,7 @@ library
     bytestring ^>= 0.11.4 || ^>= 0.12.0,
     reflection ^>= 2.1.7,
     text ^>= 2.0.2 || ^>= 2.1,
+    time ^>= 1.12 || ^>= 1.14,
     vector ^>= 0.13.0,
   default-extensions:
     BlockArguments

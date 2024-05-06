@@ -14,6 +14,7 @@ module Cretheus.Codec
 
     -- ** String codecs
     text,
+    utcTime,
 
     -- ** Array codecs
     list,
@@ -34,6 +35,7 @@ import Cretheus.Internal.Encode (Encoding, PropertyEncoding)
 import Cretheus.Internal.Encode qualified as Encode
 import Data.Int (Int32, Int64)
 import Data.Text (Text)
+import Data.Time (UTCTime)
 import Data.Vector (Vector)
 import Prelude hiding (null)
 
@@ -83,6 +85,11 @@ double =
 text :: Codec Text
 text =
   Codec Decode.text Encode.text
+
+-- | A timestamp codec (ISO 8601).
+utcTime :: Codec UTCTime
+utcTime =
+  Codec Decode.utcTime Encode.utcTime
 
 -- | A list codec.
 list :: Codec a -> Codec [a]
