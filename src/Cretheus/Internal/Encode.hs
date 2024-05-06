@@ -2,6 +2,8 @@ module Cretheus.Internal.Encode
   ( Encoding,
     PropertyEncoding,
     asBytes,
+    asBytesBuilder,
+    asLazyBytes,
     asText,
     asValue,
     bool,
@@ -27,6 +29,8 @@ import Data.Aeson qualified as Aeson
 import Data.Aeson.Encoding qualified as Aeson
 import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.ByteString (ByteString)
+import Data.ByteString.Builder qualified as ByteString (Builder)
+import Data.ByteString.Lazy (LazyByteString)
 import Data.ByteString.Lazy qualified as ByteString.Lazy
 import Data.Int (Int32, Int64)
 import Data.Text (Text)
@@ -51,7 +55,17 @@ asAesonEncoding (Encoding encoding _) =
 -- | Interpret an encoding as bytes.
 asBytes :: Encoding -> ByteString
 asBytes =
-  ByteString.Lazy.toStrict . Aeson.encodingToLazyByteString . asAesonEncoding
+  ByteString.Lazy.toStrict . asLazyBytes
+
+-- | Interpret an encoding as bytes.
+asLazyBytes :: Encoding -> LazyByteString
+asLazyBytes =
+  Aeson.encodingToLazyByteString . asAesonEncoding
+
+-- | Interpret an encoding as a bytes builder.
+asBytesBuilder :: Encoding -> ByteString.Builder
+asBytesBuilder =
+  Aeson.fromEncoding . asAesonEncoding
 
 -- | Interpret an encoding as text.
 asText :: Encoding -> Text
