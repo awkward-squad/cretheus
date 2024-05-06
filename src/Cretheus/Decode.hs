@@ -32,6 +32,7 @@ module Cretheus.Decode
     object,
     property,
     optionalProperty,
+    map,
     keyMap,
 
     -- ** Null decoders

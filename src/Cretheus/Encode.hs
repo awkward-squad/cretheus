@@ -33,6 +33,7 @@ module Cretheus.Encode
     object,
     property,
     optionalProperty,
+    map,
     keyMap,
 
     -- ** Null encoders
