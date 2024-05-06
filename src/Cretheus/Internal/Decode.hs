@@ -4,13 +4,14 @@ module Cretheus.Internal.Decode
     bool,
     fromBytes,
     fromLazyBytes,
+    double,
+    float,
     fromText,
     fromValue,
     int,
     int32,
     int64,
-    float,
-    double,
+    keyMap,
     list,
     map,
     null,
@@ -19,6 +20,7 @@ module Cretheus.Internal.Decode
     optionalProperty,
     property,
     refine,
+    set,
     text,
     utcTime,
     value,
@@ -29,13 +31,18 @@ where
 import Control.Monad qualified as Monad
 import Data.Aeson qualified as Aeson
 import Data.Aeson.KeyMap qualified as Aeson (KeyMap)
+import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.Aeson.Types qualified as Aeson
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as Lazy (ByteString)
 import Data.Coerce (coerce)
 import Data.Data (Proxy (..))
 import Data.Int (Int32, Int64)
+import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
 import Data.Reflection (Reifies (reflect), reify)
+import Data.Set (Set)
+import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Text
@@ -154,35 +161,48 @@ utcTime :: Decoder UTCTime
 utcTime =
   Decoder Aeson.parseJSON
 
--- | A vector decoder.
-vector :: Decoder v -> Decoder (Vector v)
-vector (Decoder f) =
-  Decoder (Aeson.withArray "" (traverse f))
-
 -- | A list decoder.
 list :: Decoder v -> Decoder [v]
 list =
   fmap Vector.toList . vector
 
--- | A map decoder.
-map :: Decoder v -> Decoder (Aeson.KeyMap v)
-map (Decoder v) =
-  object (ObjectDecoder (traverse v))
+-- | A vector decoder.
+vector :: Decoder v -> Decoder (Vector v)
+vector (Decoder f) =
+  Decoder (Aeson.withArray "" (traverse f))
 
--- | An object property decoder.
-property :: Aeson.Key -> Decoder a -> ObjectDecoder a
-property k (Decoder v) =
-  ObjectDecoder \o -> Aeson.explicitParseField v o k
-
--- | An optional object property decoder.
-optionalProperty :: Aeson.Key -> Decoder a -> ObjectDecoder (Maybe a)
-optionalProperty k (Decoder v) =
-  ObjectDecoder \o -> Aeson.explicitParseFieldMaybe' v o k
+-- | A set decoder.
+set :: (Ord a) => Decoder a -> Decoder (Set a)
+set =
+  fmap Set.fromList . list
 
 -- | An object decoder.
 object :: ObjectDecoder a -> Decoder a
-object (ObjectDecoder o) =
-  Decoder (Aeson.withObject "" o)
+object (ObjectDecoder f) =
+  Decoder (Aeson.withObject "" f)
+
+-- | An object property decoder.
+property :: Aeson.Key -> Decoder a -> ObjectDecoder a
+property k (Decoder f) =
+  ObjectDecoder \o -> Aeson.explicitParseField f o k
+
+-- | An optional object property decoder.
+optionalProperty :: Aeson.Key -> Decoder a -> ObjectDecoder (Maybe a)
+optionalProperty k (Decoder f) =
+  ObjectDecoder \o -> Aeson.explicitParseFieldMaybe' f o k
+
+-- | A map decoder.
+map :: (Ord k) => (Aeson.Key -> k) -> Decoder a -> Decoder (Map k a)
+map fromKey (Decoder f) =
+  object (ObjectDecoder (foldr g (pure Map.empty) . Aeson.KeyMap.toList))
+  where
+    g (k, v) =
+      liftA2 (Map.insert (fromKey k)) (f v)
+
+-- | A key map decoder.
+keyMap :: Decoder a -> Decoder (Aeson.KeyMap a)
+keyMap (Decoder f) =
+  object (ObjectDecoder (traverse f))
 
 -- | A null decoder.
 null :: Decoder ()

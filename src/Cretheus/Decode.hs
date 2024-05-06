@@ -25,13 +25,14 @@ module Cretheus.Decode
     -- ** Array decoders
     list,
     vector,
+    set,
 
     -- ** Object decoders
     ObjectDecoder,
     object,
     property,
     optionalProperty,
-    map,
+    keyMap,
 
     -- ** Null decoders
     nullable,

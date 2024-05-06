@@ -19,10 +19,13 @@ module Cretheus.Codec
     -- ** Array codecs
     list,
     vector,
+    set,
 
     -- ** Object codecs
     ObjectCodec (..),
     object,
+    map,
+    keyMap,
 
     -- ** Null codecs
     null,
@@ -33,11 +36,14 @@ import Cretheus.Internal.Decode (Decoder, ObjectDecoder)
 import Cretheus.Internal.Decode qualified as Decode
 import Cretheus.Internal.Encode (Encoding, PropertyEncoding)
 import Cretheus.Internal.Encode qualified as Encode
+import Data.Aeson.KeyMap qualified as Aeson (Key, KeyMap)
 import Data.Int (Int32, Int64)
+import Data.Map.Strict (Map)
+import Data.Set (Set)
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import Data.Vector (Vector)
-import Prelude hiding (null)
+import Prelude hiding (map, null)
 
 -- | A value codec.
 data Codec a = Codec
@@ -101,10 +107,25 @@ vector :: Codec a -> Codec (Vector a)
 vector codec =
   Codec (Decode.vector codec.decoder) (Encode.vector codec.encoder)
 
+-- | A set codec.
+set :: (Ord a) => Codec a -> Codec (Set a)
+set codec =
+  Codec (Decode.set codec.decoder) (Encode.set codec.encoder)
+
 -- | An object codec.
 object :: ObjectCodec a -> Codec a
 object codec =
   Codec (Decode.object codec.decoder) (Encode.object . codec.encoder)
+
+-- | A map codec.
+map :: (Ord k) => (Aeson.Key -> k) -> (k -> Aeson.Key) -> Codec a -> Codec (Map k a)
+map fromKey toKey codec =
+  Codec (Decode.map fromKey codec.decoder) (Encode.map toKey codec.encoder)
+
+-- | A key map codec.
+keyMap :: Codec a -> Codec (Aeson.KeyMap a)
+keyMap codec =
+  Codec (Decode.keyMap codec.decoder) (Encode.keyMap codec.encoder)
 
 -- | A null codec.
 null :: Codec ()

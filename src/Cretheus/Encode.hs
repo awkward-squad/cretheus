@@ -25,15 +25,15 @@ module Cretheus.Encode
 
     -- ** Array encoders
     list,
-    listOf,
     vector,
-    vectorOf,
+    set,
 
     -- ** Object encoders
     PropertyEncoding,
     object,
     property,
     optionalProperty,
+    keyMap,
 
     -- ** Null encoders
     null,
@@ -41,4 +41,4 @@ module Cretheus.Encode
 where
 
 import Cretheus.Internal.Encode
-import Prelude hiding (null)
+import Prelude hiding (map, null)

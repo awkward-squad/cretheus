@@ -12,11 +12,14 @@ module Cretheus.Internal.Encode
     int,
     int32,
     int64,
+    keyMap,
     list,
+    map,
     null,
     object,
     optionalProperty,
     property,
+    set,
     text,
     utcTime,
     vector,
@@ -25,18 +28,25 @@ where
 
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Encoding qualified as Aeson
+import Data.Aeson.Key qualified as Aeson.Key
+import Data.Aeson.KeyMap qualified as Aeson (KeyMap)
 import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.ByteString (ByteString)
 import Data.ByteString.Builder qualified as ByteString (Builder)
 import Data.ByteString.Lazy (LazyByteString)
 import Data.ByteString.Lazy qualified as ByteString.Lazy
 import Data.Int (Int32, Int64)
+import Data.List qualified as List
+import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
+import Data.Set (Set)
+import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Text.Encoding qualified as Text
 import Data.Time (UTCTime)
 import Data.Vector (Vector)
 import Data.Vector qualified as Vector
-import Prelude hiding (null)
+import Prelude hiding (map, null)
 
 -- | A value encoding.
 data Encoding
@@ -126,7 +136,7 @@ list f =
   mk toAesonEncoding toAesonValue
   where
     toAesonEncoding = Aeson.list (asAesonEncoding . f)
-    toAesonValue = Aeson.toJSON . map (asValue . f)
+    toAesonValue = Aeson.toJSON . List.map (asValue . f)
 
 -- | A vector encoder.
 vector :: (a -> Encoding) -> Vector a -> Encoding
@@ -135,6 +145,11 @@ vector f =
   where
     toAesonEncoding = Aeson.list (asAesonEncoding . f) . Vector.toList
     toAesonValue = Aeson.Array . Vector.map (asValue . f)
+
+-- | A set encoder.
+set :: (a -> Encoding) -> Set a -> Encoding
+set f =
+  list f . Set.toList
 
 -- | An object property encoding.
 data PropertyEncoding
@@ -158,7 +173,7 @@ propToAesonKeyValue (Prop k v) =
 
 propsToAesonValue :: [Prop] -> Aeson.Value
 propsToAesonValue =
-  Aeson.Object . Aeson.KeyMap.fromList . map propToAesonKeyValue
+  Aeson.Object . Aeson.KeyMap.fromList . List.map propToAesonKeyValue
 
 addProperty :: PropertyEncoding -> [Prop] -> [Prop]
 addProperty = \case
@@ -180,3 +195,19 @@ optionalProperty :: Aeson.Key -> Maybe Encoding -> PropertyEncoding
 optionalProperty key = \case
   Nothing -> Nada
   Just val -> Algo (Prop key val)
+
+-- | A map encoder.
+map :: (k -> Aeson.Key) -> (a -> Encoding) -> Map k a -> Encoding
+map f g =
+  mk toAesonEncoding toAesonValue
+  where
+    toAesonEncoding = Aeson.dict (Aeson.text . Aeson.Key.toText . f) (asAesonEncoding . g) Map.foldrWithKey
+    toAesonValue = Aeson.Object . Aeson.KeyMap.fromList . List.map (\(k, v) -> (f k, asValue (g v))) . Map.toList
+
+-- | A key map encoder.
+keyMap :: (a -> Encoding) -> Aeson.KeyMap a -> Encoding
+keyMap f =
+  mk toAesonEncoding toAesonValue
+  where
+    toAesonEncoding = Aeson.dict (Aeson.text . Aeson.Key.toText) (asAesonEncoding . f) Aeson.KeyMap.foldrWithKey
+    toAesonValue = Aeson.Object . Aeson.KeyMap.map (asValue . f)
