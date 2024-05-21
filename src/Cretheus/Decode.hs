@@ -24,6 +24,7 @@ module Cretheus.Decode
 
     -- ** Array decoders
     list,
+    array,
     vector,
     set,
 

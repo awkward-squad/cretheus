@@ -1,6 +1,7 @@
 module Cretheus.Internal.Decode
   ( Decoder,
     ObjectDecoder,
+    array,
     bool,
     fromBytes,
     fromLazyBytes,
@@ -40,6 +41,7 @@ import Data.Data (Proxy (..))
 import Data.Int (Int32, Int64)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
+import Data.Primitive.Array (Array)
 import Data.Reflection (Reifies (reflect), reify)
 import Data.Set (Set)
 import Data.Set qualified as Set
@@ -78,7 +80,7 @@ newtype ObjectDecoder a
   deriving (Applicative, Functor, Monad) via (GDecoder Aeson.Object)
 
 -- This didn't suck as bad before aeson-2.2, when they got rid of `eitherDecodeWith`...
-newtype D s a = D a
+newtype D (s :: k) a = D a
 
 instance (Reifies s (Decoder a)) => Aeson.FromJSON (D s a) where
   parseJSON :: Aeson.Value -> Aeson.Parser (D s a)
@@ -162,12 +164,17 @@ utcTime =
   Decoder Aeson.parseJSON
 
 -- | A list decoder.
-list :: Decoder v -> Decoder [v]
+list :: Decoder a -> Decoder [a]
 list =
   fmap Vector.toList . vector
 
+-- | An array decoder.
+array :: Decoder a -> Decoder (Array a)
+array (Decoder f) =
+  Decoder (Aeson.withArray "" (traverse f . Vector.toArray))
+
 -- | A vector decoder.
-vector :: Decoder v -> Decoder (Vector v)
+vector :: Decoder a -> Decoder (Vector a)
 vector (Decoder f) =
   Decoder (Aeson.withArray "" (traverse f))
 

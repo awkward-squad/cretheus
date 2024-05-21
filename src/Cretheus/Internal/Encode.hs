@@ -1,6 +1,7 @@
 module Cretheus.Internal.Encode
   ( Encoding,
     PropertyEncoding,
+    array,
     asBytes,
     asBytesBuilder,
     asLazyBytes,
@@ -35,10 +36,12 @@ import Data.ByteString (ByteString)
 import Data.ByteString.Builder qualified as ByteString (Builder)
 import Data.ByteString.Lazy (LazyByteString)
 import Data.ByteString.Lazy qualified as ByteString.Lazy
+import Data.Foldable qualified as Foldable
 import Data.Int (Int32, Int64)
 import Data.List qualified as List
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
+import Data.Primitive.Array (Array)
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Text (Text)
@@ -137,6 +140,14 @@ list f =
   where
     toAesonEncoding = Aeson.list (asAesonEncoding . f)
     toAesonValue = Aeson.toJSON . List.map (asValue . f)
+
+-- | An array encoder.
+array :: (a -> Encoding) -> Array a -> Encoding
+array f =
+  mk toAesonEncoding toAesonValue
+  where
+    toAesonEncoding = Aeson.list (asAesonEncoding . f) . Foldable.toList @Array
+    toAesonValue = Aeson.Array . Vector.fromArray . fmap @Array (asValue . f)
 
 -- | A vector encoder.
 vector :: (a -> Encoding) -> Vector a -> Encoding

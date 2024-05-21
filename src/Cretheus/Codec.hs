@@ -18,6 +18,7 @@ module Cretheus.Codec
 
     -- ** Array codecs
     list,
+    array,
     vector,
     set,
 
@@ -39,6 +40,7 @@ import Cretheus.Internal.Encode qualified as Encode
 import Data.Aeson.KeyMap qualified as Aeson (Key, KeyMap)
 import Data.Int (Int32, Int64)
 import Data.Map.Strict (Map)
+import Data.Primitive.Array (Array)
 import Data.Set (Set)
 import Data.Text (Text)
 import Data.Time (UTCTime)
@@ -101,6 +103,11 @@ utcTime =
 list :: Codec a -> Codec [a]
 list codec =
   Codec (Decode.list codec.decoder) (Encode.list codec.encoder)
+
+-- | An array codec.
+array :: Codec a -> Codec (Array a)
+array codec =
+  Codec (Decode.array codec.decoder) (Encode.array codec.encoder)
 
 -- | A vector codec.
 vector :: Codec a -> Codec (Vector a)

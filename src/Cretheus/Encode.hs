@@ -25,6 +25,7 @@ module Cretheus.Encode
 
     -- ** Array encoders
     list,
+    array,
     vector,
     set,
 
