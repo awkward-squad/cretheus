@@ -3,16 +3,16 @@ cabal-version: 2.2
 author: Mitchell Rosen
 bug-reports: https://github.com/mitchellwrosen/cretheus/issues
 category: Json
-copyright: Copyright (C) 2023 Mitchell Rosen
+copyright: Copyright (C) 2023-2025 Mitchell Dalvi Rosen
 description: A clean aeson wrapper.
 homepage: https://github.com/mitchellwrosen/cretheus
 license: BSD-3-Clause
 license-file: LICENSE
-maintainer: Mitchell Rosen <mitchellwrosen@gmail.com>
+maintainer: Mitchell Dalvi Rosen <mitchellwrosen@gmail.com>
 name: cretheus
 stability: experimental
 synopsis: A clean aeson wrapper
-tested-with: GHC == 9.2.7, GHC == 9.4.5, GHC == 9.6.2
+tested-with: GHC == 9.8.4, GHC == 9.10.1, GHC == 9.12.2
 version: 0.1.0
 
 extra-source-files:
