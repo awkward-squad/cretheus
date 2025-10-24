@@ -206,7 +206,7 @@ map fromKey (Decoder f) =
 -- | A key map decoder.
 keyMap :: Decoder a -> Decoder (Aeson.KeyMap a)
 keyMap (Decoder f) =
-  object (ObjectDecoder (traverse f))
+  object (ObjectDecoder (Aeson.KeyMap.traverse f))
 
 -- | A null decoder.
 null :: Decoder ()
