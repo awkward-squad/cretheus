@@ -201,10 +201,7 @@ optionalProperty k (Decoder f) =
 -- | A map decoder.
 map :: (Ord k) => (Aeson.Key -> k) -> Decoder a -> Decoder (Map k a)
 map fromKey (Decoder f) =
-  object (ObjectDecoder (foldr g (pure Map.empty) . Aeson.KeyMap.toList))
-  where
-    g (k, v) =
-      liftA2 (Map.insert (fromKey k)) (f v)
+  object (ObjectDecoder (Aeson.KeyMap.foldrWithKey (\k v -> liftA2 (Map.insert (fromKey k)) (f v)) (pure Map.empty)))
 
 -- | A key map decoder.
 keyMap :: Decoder a -> Decoder (Aeson.KeyMap a)
