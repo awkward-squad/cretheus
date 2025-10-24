@@ -39,6 +39,9 @@ module Cretheus.Encode
 
     -- ** Null encoders
     null,
+
+    -- ** Value encoders
+    value,
   )
 where
 

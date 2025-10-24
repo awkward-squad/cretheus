@@ -3,15 +3,16 @@ module Cretheus.Internal.Decode
     ObjectDecoder,
     array,
     bool,
-    fromBytes,
-    fromLazyBytes,
     double,
     float,
+    fromBytes,
+    fromLazyBytes,
     fromText,
     fromValue,
     int,
     int32,
     int64,
+    integer,
     keyMap,
     list,
     map,
@@ -97,6 +98,7 @@ fromBytes decoder bytes =
     case Aeson.eitherDecodeStrict bytes of
       Left err -> Left (Text.pack err)
       Right (D result :: D s a) -> Right result
+{-# INLINEABLE fromBytes #-}
 
 -- | Decode lazy bytes.
 fromLazyBytes :: Decoder a -> Lazy.ByteString -> Either Text a
@@ -105,11 +107,13 @@ fromLazyBytes decoder bytes =
     case Aeson.eitherDecode bytes of
       Left err -> Left (Text.pack err)
       Right (D result :: D s a) -> Right result
+{-# INLINEABLE fromLazyBytes #-}
 
 -- | Decode text.
 fromText :: Decoder a -> Text -> Either Text a
 fromText decoder str =
   fromBytes decoder (Text.encodeUtf8 str)
+{-# INLINEABLE fromText #-}
 
 -- | Decode a value.
 fromValue :: Decoder a -> Aeson.Value -> Either Text a
@@ -117,96 +121,121 @@ fromValue (Decoder decoder) val =
   case Aeson.parseEither decoder val of
     Left err -> Left (Text.pack err)
     Right result -> Right result
+{-# INLINEABLE fromValue #-}
 
 -- | A value decoder.
 value :: Decoder Aeson.Value
 value =
   Decoder Aeson.parseJSON
+{-# INLINEABLE value #-}
 
 -- | A bool decoder.
 bool :: Decoder Bool
 bool =
   Decoder Aeson.parseJSON
+{-# INLINEABLE bool #-}
 
 -- | An int decoder.
 int :: Decoder Int
 int =
   Decoder Aeson.parseJSON
+{-# INLINEABLE int #-}
 
 -- | A 32-bit int decoder.
 int32 :: Decoder Int32
 int32 =
   Decoder Aeson.parseJSON
+{-# INLINEABLE int32 #-}
 
 -- | A 64-bit int decoder.
 int64 :: Decoder Int64
 int64 =
   Decoder Aeson.parseJSON
+{-# INLINEABLE int64 #-}
+
+-- | An integer decoder.
+integer :: Decoder Integer
+integer =
+  Decoder Aeson.parseJSON
+{-# INLINEABLE integer #-}
 
 -- | A 32-bit float decoder.
 float :: Decoder Float
 float =
   Decoder Aeson.parseJSON
+{-# INLINEABLE float #-}
 
 -- | A 64-bit float decoder.
 double :: Decoder Double
 double =
   Decoder Aeson.parseJSON
+{-# INLINEABLE double #-}
 
 -- | A text decoder.
 text :: Decoder Text
 text =
   Decoder Aeson.parseJSON
+{-# INLINEABLE text #-}
 
 -- | A timestamp decoder (ISO 8601).
 utcTime :: Decoder UTCTime
 utcTime =
   Decoder Aeson.parseJSON
+{-# INLINEABLE utcTime #-}
 
 -- | A list decoder.
 list :: Decoder a -> Decoder [a]
 list =
   fmap Vector.toList . vector
+{-# INLINEABLE list #-}
 
 -- | An array decoder.
 array :: Decoder a -> Decoder (Array a)
 array (Decoder f) =
   Decoder (Aeson.withArray "" (traverse f . Vector.toArray))
+{-# INLINEABLE array #-}
 
 -- | A vector decoder.
 vector :: Decoder a -> Decoder (Vector a)
 vector (Decoder f) =
   Decoder (Aeson.withArray "" (traverse f))
+{-# INLINEABLE vector #-}
 
 -- | A set decoder.
 set :: (Ord a) => Decoder a -> Decoder (Set a)
 set =
   fmap Set.fromList . list
+{-# INLINEABLE set #-}
 
 -- | An object decoder.
 object :: ObjectDecoder a -> Decoder a
 object (ObjectDecoder f) =
   Decoder (Aeson.withObject "" f)
+{-# INLINEABLE object #-}
 
 -- | An object property decoder.
 property :: Aeson.Key -> Decoder a -> ObjectDecoder a
 property k (Decoder f) =
   ObjectDecoder \o -> Aeson.explicitParseField f o k
+{-# INLINEABLE property #-}
 
 -- | An optional object property decoder.
 optionalProperty :: Aeson.Key -> Decoder a -> ObjectDecoder (Maybe a)
 optionalProperty k (Decoder f) =
   ObjectDecoder \o -> Aeson.explicitParseFieldMaybe' f o k
+{-# INLINEABLE optionalProperty #-}
 
 -- | A map decoder.
 map :: (Ord k) => (Aeson.Key -> k) -> Decoder a -> Decoder (Map k a)
 map fromKey (Decoder f) =
   object (ObjectDecoder (Aeson.KeyMap.foldrWithKey (\k v -> liftA2 (Map.insert (fromKey k)) (f v)) (pure Map.empty)))
+{-# INLINEABLE map #-}
 
 -- | A key map decoder.
 keyMap :: Decoder a -> Decoder (Aeson.KeyMap a)
 keyMap (Decoder f) =
   object (ObjectDecoder (Aeson.KeyMap.traverse f))
+{-# INLINEABLE keyMap #-}
 
 -- | A null decoder.
 null :: Decoder ()
@@ -214,6 +243,7 @@ null =
   Decoder \case
     Aeson.Null -> pure ()
     _ -> fail "expected null"
+{-# INLINEABLE null #-}
 
 -- | A nullable decoder.
 nullable :: Decoder v -> Decoder (Maybe v)
@@ -221,6 +251,7 @@ nullable (Decoder f) =
   Decoder \case
     Aeson.Null -> pure Nothing
     val -> Just <$> f val
+{-# INLINEABLE nullable #-}
 
 -- | Refine a decoder with a predicate.
 refine :: (a -> Either Text b) -> Decoder a -> Decoder b
@@ -230,3 +261,4 @@ refine p (Decoder f) =
     case p x of
       Left err -> fail (Text.unpack err)
       Right y -> pure y
+{-# INLINEABLE refine #-}

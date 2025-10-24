@@ -15,6 +15,7 @@ module Cretheus.Decode
     int,
     int32,
     int64,
+    integer,
     float,
     double,
 
