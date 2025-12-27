@@ -24,6 +24,14 @@ module Cretheus.Internal.Decode
     refine,
     set,
     text,
+    tuple2,
+    tuple3,
+    tuple4,
+    tuple5,
+    tuple6,
+    tuple7,
+    tuple8,
+    tuple9,
     utcTime,
     value,
     vector,
@@ -206,6 +214,192 @@ set :: (Ord a) => Decoder a -> Decoder (Set a)
 set =
   fmap Set.fromList . list
 {-# INLINEABLE set #-}
+
+-- | A 2-tuple decoder.
+tuple2 :: (a -> b -> c) -> Decoder a -> Decoder b -> Decoder c
+tuple2 f (Decoder fa) (Decoder fb) =
+  Decoder
+    ( Aeson.withArray "" \v ->
+        if Vector.length v == 2
+          then
+            f
+              <$> fa (Vector.unsafeIndex v 0)
+              <*> fb (Vector.unsafeIndex v 1)
+          else
+            fail ("expected 2-element array, but found " ++ show (Vector.length v))
+    )
+{-# INLINEABLE tuple2 #-}
+
+-- | A 3-tuple decoder.
+tuple3 :: (a -> b -> c -> d) -> Decoder a -> Decoder b -> Decoder c -> Decoder d
+tuple3 f (Decoder fa) (Decoder fb) (Decoder fc) =
+  Decoder
+    ( Aeson.withArray "" \v ->
+        if Vector.length v == 3
+          then
+            f
+              <$> fa (Vector.unsafeIndex v 0)
+              <*> fb (Vector.unsafeIndex v 1)
+              <*> fc (Vector.unsafeIndex v 2)
+          else
+            fail ("expected 3-element array, but found " ++ show (Vector.length v))
+    )
+{-# INLINEABLE tuple3 #-}
+
+-- | A 4-tuple decoder.
+tuple4 :: (a -> b -> c -> d -> e) -> Decoder a -> Decoder b -> Decoder c -> Decoder d -> Decoder e
+tuple4 f (Decoder fa) (Decoder fb) (Decoder fc) (Decoder fd) =
+  Decoder
+    ( Aeson.withArray "" \v ->
+        if Vector.length v == 4
+          then
+            f
+              <$> fa (Vector.unsafeIndex v 0)
+              <*> fb (Vector.unsafeIndex v 1)
+              <*> fc (Vector.unsafeIndex v 2)
+              <*> fd (Vector.unsafeIndex v 3)
+          else
+            fail ("expected 4-element array, but found " ++ show (Vector.length v))
+    )
+{-# INLINEABLE tuple4 #-}
+
+-- | A 5-tuple decoder.
+tuple5 :: (a -> b -> c -> d -> e -> f) -> Decoder a -> Decoder b -> Decoder c -> Decoder d -> Decoder e -> Decoder f
+tuple5 f (Decoder fa) (Decoder fb) (Decoder fc) (Decoder fd) (Decoder fe) =
+  Decoder
+    ( Aeson.withArray "" \v ->
+        if Vector.length v == 5
+          then
+            f
+              <$> fa (Vector.unsafeIndex v 0)
+              <*> fb (Vector.unsafeIndex v 1)
+              <*> fc (Vector.unsafeIndex v 2)
+              <*> fd (Vector.unsafeIndex v 3)
+              <*> fe (Vector.unsafeIndex v 4)
+          else
+            fail ("expected 5-element array, but found " ++ show (Vector.length v))
+    )
+{-# INLINEABLE tuple5 #-}
+
+-- | A 6-tuple decoder.
+tuple6 ::
+  (a -> b -> c -> d -> e -> f -> g) ->
+  Decoder a ->
+  Decoder b ->
+  Decoder c ->
+  Decoder d ->
+  Decoder e ->
+  Decoder f ->
+  Decoder g
+tuple6 f (Decoder fa) (Decoder fb) (Decoder fc) (Decoder fd) (Decoder fe) (Decoder ff) =
+  Decoder
+    ( Aeson.withArray "" \v ->
+        if Vector.length v == 6
+          then
+            f
+              <$> fa (Vector.unsafeIndex v 0)
+              <*> fb (Vector.unsafeIndex v 1)
+              <*> fc (Vector.unsafeIndex v 2)
+              <*> fd (Vector.unsafeIndex v 3)
+              <*> fe (Vector.unsafeIndex v 4)
+              <*> ff (Vector.unsafeIndex v 5)
+          else
+            fail ("expected 6-element array, but found " ++ show (Vector.length v))
+    )
+{-# INLINEABLE tuple6 #-}
+
+-- | A 7-tuple decoder.
+tuple7 ::
+  (a -> b -> c -> d -> e -> f -> g -> h) ->
+  Decoder a ->
+  Decoder b ->
+  Decoder c ->
+  Decoder d ->
+  Decoder e ->
+  Decoder f ->
+  Decoder g ->
+  Decoder h
+tuple7 f (Decoder fa) (Decoder fb) (Decoder fc) (Decoder fd) (Decoder fe) (Decoder ff) (Decoder fg) =
+  Decoder
+    ( Aeson.withArray "" \v ->
+        if Vector.length v == 7
+          then
+            f
+              <$> fa (Vector.unsafeIndex v 0)
+              <*> fb (Vector.unsafeIndex v 1)
+              <*> fc (Vector.unsafeIndex v 2)
+              <*> fd (Vector.unsafeIndex v 3)
+              <*> fe (Vector.unsafeIndex v 4)
+              <*> ff (Vector.unsafeIndex v 5)
+              <*> fg (Vector.unsafeIndex v 6)
+          else
+            fail ("expected 7-element array, but found " ++ show (Vector.length v))
+    )
+{-# INLINEABLE tuple7 #-}
+
+-- | A 8-tuple decoder.
+tuple8 ::
+  (a -> b -> c -> d -> e -> f -> g -> h -> i) ->
+  Decoder a ->
+  Decoder b ->
+  Decoder c ->
+  Decoder d ->
+  Decoder e ->
+  Decoder f ->
+  Decoder g ->
+  Decoder h ->
+  Decoder i
+tuple8 f (Decoder fa) (Decoder fb) (Decoder fc) (Decoder fd) (Decoder fe) (Decoder ff) (Decoder fg) (Decoder fh) =
+  Decoder
+    ( Aeson.withArray "" \v ->
+        if Vector.length v == 8
+          then
+            f
+              <$> fa (Vector.unsafeIndex v 0)
+              <*> fb (Vector.unsafeIndex v 1)
+              <*> fc (Vector.unsafeIndex v 2)
+              <*> fd (Vector.unsafeIndex v 3)
+              <*> fe (Vector.unsafeIndex v 4)
+              <*> ff (Vector.unsafeIndex v 5)
+              <*> fg (Vector.unsafeIndex v 6)
+              <*> fh (Vector.unsafeIndex v 7)
+          else
+            fail ("expected 8-element array, but found " ++ show (Vector.length v))
+    )
+{-# INLINEABLE tuple8 #-}
+
+-- | A 9-tuple decoder.
+tuple9 ::
+  (a -> b -> c -> d -> e -> f -> g -> h -> i -> j) ->
+  Decoder a ->
+  Decoder b ->
+  Decoder c ->
+  Decoder d ->
+  Decoder e ->
+  Decoder f ->
+  Decoder g ->
+  Decoder h ->
+  Decoder i ->
+  Decoder j
+tuple9 f (Decoder fa) (Decoder fb) (Decoder fc) (Decoder fd) (Decoder fe) (Decoder ff) (Decoder fg) (Decoder fh) (Decoder fi) =
+  Decoder
+    ( Aeson.withArray "" \v ->
+        if Vector.length v == 9
+          then
+            f
+              <$> fa (Vector.unsafeIndex v 0)
+              <*> fb (Vector.unsafeIndex v 1)
+              <*> fc (Vector.unsafeIndex v 2)
+              <*> fd (Vector.unsafeIndex v 3)
+              <*> fe (Vector.unsafeIndex v 4)
+              <*> ff (Vector.unsafeIndex v 5)
+              <*> fg (Vector.unsafeIndex v 6)
+              <*> fh (Vector.unsafeIndex v 7)
+              <*> fi (Vector.unsafeIndex v 8)
+          else
+            fail ("expected 9-element array, but found " ++ show (Vector.length v))
+    )
+{-# INLINEABLE tuple9 #-}
 
 -- | An object decoder.
 object :: ObjectDecoder a -> Decoder a

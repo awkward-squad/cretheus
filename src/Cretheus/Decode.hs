@@ -28,6 +28,8 @@ module Cretheus.Decode
     array,
     vector,
     set,
+    tuple2,
+    tuple3,
 
     -- ** Object decoders
     ObjectDecoder,
@@ -45,6 +47,14 @@ module Cretheus.Decode
 
     -- ** Decoder refinement
     refine,
+
+    -- ** Longer tuple decoders
+    tuple4,
+    tuple5,
+    tuple6,
+    tuple7,
+    tuple8,
+    tuple9,
   )
 where
 

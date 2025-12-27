@@ -1,6 +1,7 @@
-## [1.2.0] – Unreleased
+## [1.2.0] – December 26, 2025
 
-- Add `Cretheus.Encode.tuple2` .. `Cretheus.Encode.tuple9`
+- Add `Cretheus.Encode.tuple2`, up to length 9
+- Add `Cretheus.Decode.tuple2`, up to length 9
 
 ## [1.1.0] – October 24, 2025
 
