@@ -22,14 +22,24 @@ module Cretheus.Internal.Encode
     property,
     set,
     text,
+    tuple2,
+    tuple3,
+    tuple4,
+    tuple5,
+    tuple6,
+    tuple7,
+    tuple8,
+    tuple9,
     utcTime,
     value,
     vector,
   )
 where
 
+import Control.Monad.ST (runST)
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Encoding qualified as Aeson
+import Data.Aeson.Encoding.Internal qualified as Aeson (Encoding' (..), closeBracket, comma, openBracket)
 import Data.Aeson.Key qualified as Aeson.Key
 import Data.Aeson.KeyMap qualified as Aeson (KeyMap)
 import Data.Aeson.KeyMap qualified as Aeson.KeyMap
@@ -50,6 +60,7 @@ import Data.Text.Encoding qualified as Text
 import Data.Time (UTCTime)
 import Data.Vector (Vector)
 import Data.Vector qualified as Vector
+import Data.Vector.Mutable qualified as Vector.Mutable
 import Prelude hiding (map, null)
 
 -- | A value encoding.
@@ -178,6 +189,271 @@ set f =
   list f . Set.toList
 {-# INLINEABLE set #-}
 
+-- | A 2-tuple encoder.
+tuple2 :: (a -> Encoding) -> (b -> Encoding) -> (a, b) -> Encoding
+tuple2 fa fb =
+  mk
+    ( \(a, b) ->
+        Aeson.openBracket
+          >< asAesonEncoding (fa a)
+          >< Aeson.comma
+          >< asAesonEncoding (fb b)
+          >< Aeson.closeBracket
+    )
+    ( \(a, b) ->
+        Aeson.Array
+          ( runST do
+              v <- Vector.Mutable.unsafeNew 2
+              Vector.Mutable.write v 0 (asValue (fa a))
+              Vector.Mutable.write v 1 (asValue (fb b))
+              Vector.unsafeFreeze v
+          )
+    )
+{-# INLINEABLE tuple2 #-}
+
+-- | A 3-tuple encoder.
+tuple3 :: (a -> Encoding) -> (b -> Encoding) -> (c -> Encoding) -> (a, b, c) -> Encoding
+tuple3 fa fb fc =
+  mk
+    ( \(a, b, c) ->
+        Aeson.openBracket
+          >< asAesonEncoding (fa a)
+          >< foldr (\x acc -> Aeson.comma >< asAesonEncoding x >< acc) Aeson.closeBracket [fb b, fc c]
+    )
+    ( \(a, b, c) ->
+        Aeson.Array
+          ( runST do
+              v <- Vector.Mutable.unsafeNew 3
+              Vector.Mutable.write v 0 (asValue (fa a))
+              Vector.Mutable.write v 1 (asValue (fb b))
+              Vector.Mutable.write v 2 (asValue (fc c))
+              Vector.unsafeFreeze v
+          )
+    )
+{-# INLINEABLE tuple3 #-}
+
+-- | A 4-tuple encoder.
+tuple4 :: (a -> Encoding) -> (b -> Encoding) -> (c -> Encoding) -> (d -> Encoding) -> (a, b, c, d) -> Encoding
+tuple4 fa fb fc fd =
+  mk
+    ( \(a, b, c, d) ->
+        Aeson.openBracket
+          >< asAesonEncoding (fa a)
+          >< foldr (\x acc -> Aeson.comma >< asAesonEncoding x >< acc) Aeson.closeBracket [fb b, fc c, fd d]
+    )
+    ( \(a, b, c, d) ->
+        Aeson.Array
+          ( runST do
+              v <- Vector.Mutable.unsafeNew 4
+              Vector.Mutable.write v 0 (asValue (fa a))
+              Vector.Mutable.write v 1 (asValue (fb b))
+              Vector.Mutable.write v 2 (asValue (fc c))
+              Vector.Mutable.write v 3 (asValue (fd d))
+              Vector.unsafeFreeze v
+          )
+    )
+{-# INLINEABLE tuple4 #-}
+
+-- | A 5-tuple encoder.
+tuple5 ::
+  (a -> Encoding) ->
+  (b -> Encoding) ->
+  (c -> Encoding) ->
+  (d -> Encoding) ->
+  (e -> Encoding) ->
+  (a, b, c, d, e) ->
+  Encoding
+tuple5 fa fb fc fd fe =
+  mk
+    ( \(a, b, c, d, e) ->
+        Aeson.openBracket
+          >< asAesonEncoding (fa a)
+          >< foldr (\x acc -> Aeson.comma >< asAesonEncoding x >< acc) Aeson.closeBracket [fb b, fc c, fd d, fe e]
+    )
+    ( \(a, b, c, d, e) ->
+        Aeson.Array
+          ( runST do
+              v <- Vector.Mutable.unsafeNew 5
+              Vector.Mutable.write v 0 (asValue (fa a))
+              Vector.Mutable.write v 1 (asValue (fb b))
+              Vector.Mutable.write v 2 (asValue (fc c))
+              Vector.Mutable.write v 3 (asValue (fd d))
+              Vector.Mutable.write v 4 (asValue (fe e))
+              Vector.unsafeFreeze v
+          )
+    )
+{-# INLINEABLE tuple5 #-}
+
+-- | A 6-tuple encoder.
+tuple6 ::
+  (a -> Encoding) ->
+  (b -> Encoding) ->
+  (c -> Encoding) ->
+  (d -> Encoding) ->
+  (e -> Encoding) ->
+  (f -> Encoding) ->
+  (a, b, c, d, e, f) ->
+  Encoding
+tuple6 fa fb fc fd fe ff =
+  mk
+    ( \(a, b, c, d, e, f) ->
+        Aeson.openBracket
+          >< asAesonEncoding (fa a)
+          >< foldr (\x acc -> Aeson.comma >< asAesonEncoding x >< acc) Aeson.closeBracket [fb b, fc c, fd d, fe e, ff f]
+    )
+    ( \(a, b, c, d, e, f) ->
+        Aeson.Array
+          ( runST do
+              v <- Vector.Mutable.unsafeNew 6
+              Vector.Mutable.write v 0 (asValue (fa a))
+              Vector.Mutable.write v 1 (asValue (fb b))
+              Vector.Mutable.write v 2 (asValue (fc c))
+              Vector.Mutable.write v 3 (asValue (fd d))
+              Vector.Mutable.write v 4 (asValue (fe e))
+              Vector.Mutable.write v 5 (asValue (ff f))
+              Vector.unsafeFreeze v
+          )
+    )
+{-# INLINEABLE tuple6 #-}
+
+-- | A 7-tuple encoder.
+tuple7 ::
+  (a -> Encoding) ->
+  (b -> Encoding) ->
+  (c -> Encoding) ->
+  (d -> Encoding) ->
+  (e -> Encoding) ->
+  (f -> Encoding) ->
+  (g -> Encoding) ->
+  (a, b, c, d, e, f, g) ->
+  Encoding
+tuple7 fa fb fc fd fe ff fg =
+  mk
+    ( \(a, b, c, d, e, f, g) ->
+        Aeson.openBracket
+          >< asAesonEncoding (fa a)
+          >< foldr
+            (\x acc -> Aeson.comma >< asAesonEncoding x >< acc)
+            Aeson.closeBracket
+            [ fb b,
+              fc c,
+              fd d,
+              fe e,
+              ff f,
+              fg g
+            ]
+    )
+    ( \(a, b, c, d, e, f, g) ->
+        Aeson.Array
+          ( runST do
+              v <- Vector.Mutable.unsafeNew 7
+              Vector.Mutable.write v 0 (asValue (fa a))
+              Vector.Mutable.write v 1 (asValue (fb b))
+              Vector.Mutable.write v 2 (asValue (fc c))
+              Vector.Mutable.write v 3 (asValue (fd d))
+              Vector.Mutable.write v 4 (asValue (fe e))
+              Vector.Mutable.write v 5 (asValue (ff f))
+              Vector.Mutable.write v 6 (asValue (fg g))
+              Vector.unsafeFreeze v
+          )
+    )
+{-# INLINEABLE tuple7 #-}
+
+-- | A 8-tuple encoder.
+tuple8 ::
+  (a -> Encoding) ->
+  (b -> Encoding) ->
+  (c -> Encoding) ->
+  (d -> Encoding) ->
+  (e -> Encoding) ->
+  (f -> Encoding) ->
+  (g -> Encoding) ->
+  (h -> Encoding) ->
+  (a, b, c, d, e, f, g, h) ->
+  Encoding
+tuple8 fa fb fc fd fe ff fg fh =
+  mk
+    ( \(a, b, c, d, e, f, g, h) ->
+        Aeson.openBracket
+          >< asAesonEncoding (fa a)
+          >< foldr
+            (\x acc -> Aeson.comma >< asAesonEncoding x >< acc)
+            Aeson.closeBracket
+            [ fb b,
+              fc c,
+              fd d,
+              fe e,
+              ff f,
+              fg g,
+              fh h
+            ]
+    )
+    ( \(a, b, c, d, e, f, g, h) ->
+        Aeson.Array
+          ( runST do
+              v <- Vector.Mutable.unsafeNew 8
+              Vector.Mutable.write v 0 (asValue (fa a))
+              Vector.Mutable.write v 1 (asValue (fb b))
+              Vector.Mutable.write v 2 (asValue (fc c))
+              Vector.Mutable.write v 3 (asValue (fd d))
+              Vector.Mutable.write v 4 (asValue (fe e))
+              Vector.Mutable.write v 5 (asValue (ff f))
+              Vector.Mutable.write v 6 (asValue (fg g))
+              Vector.Mutable.write v 7 (asValue (fh h))
+              Vector.unsafeFreeze v
+          )
+    )
+{-# INLINEABLE tuple8 #-}
+
+-- | A 9-tuple encoder.
+tuple9 ::
+  (a -> Encoding) ->
+  (b -> Encoding) ->
+  (c -> Encoding) ->
+  (d -> Encoding) ->
+  (e -> Encoding) ->
+  (f -> Encoding) ->
+  (g -> Encoding) ->
+  (h -> Encoding) ->
+  (i -> Encoding) ->
+  (a, b, c, d, e, f, g, h, i) ->
+  Encoding
+tuple9 fa fb fc fd fe ff fg fh fi =
+  mk
+    ( \(a, b, c, d, e, f, g, h, i) ->
+        Aeson.openBracket
+          >< asAesonEncoding (fa a)
+          >< foldr
+            (\x acc -> Aeson.comma >< asAesonEncoding x >< acc)
+            Aeson.closeBracket
+            [ fb b,
+              fc c,
+              fd d,
+              fe e,
+              ff f,
+              fg g,
+              fh h,
+              fi i
+            ]
+    )
+    ( \(a, b, c, d, e, f, g, h, i) ->
+        Aeson.Array
+          ( runST do
+              v <- Vector.Mutable.unsafeNew 9
+              Vector.Mutable.write v 0 (asValue (fa a))
+              Vector.Mutable.write v 1 (asValue (fb b))
+              Vector.Mutable.write v 2 (asValue (fc c))
+              Vector.Mutable.write v 3 (asValue (fd d))
+              Vector.Mutable.write v 4 (asValue (fe e))
+              Vector.Mutable.write v 5 (asValue (ff f))
+              Vector.Mutable.write v 6 (asValue (fg g))
+              Vector.Mutable.write v 7 (asValue (fh h))
+              Vector.Mutable.write v 8 (asValue (fi i))
+              Vector.unsafeFreeze v
+          )
+    )
+{-# INLINEABLE tuple9 #-}
+
 -- | An object property encoding.
 data PropertyEncoding
   = Algo !Prop
@@ -241,3 +517,10 @@ keyMap f =
     (Aeson.dict (Aeson.text . Aeson.Key.toText) (asAesonEncoding . f) Aeson.KeyMap.foldrWithKey)
     (Aeson.Object . Aeson.KeyMap.map (asValue . f))
 {-# INLINEABLE keyMap #-}
+
+-- Copied from aeson source because they don't provide a Semigroup on Encoding...
+
+infixr 6 ><
+
+(><) :: Aeson.Encoding' a -> Aeson.Encoding' a -> Aeson.Encoding' a
+Aeson.Encoding a >< Aeson.Encoding b = Aeson.Encoding (a <> b)

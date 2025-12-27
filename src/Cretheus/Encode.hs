@@ -28,6 +28,8 @@ module Cretheus.Encode
     array,
     vector,
     set,
+    tuple2,
+    tuple3,
 
     -- ** Object encoders
     PropertyEncoding,
@@ -42,6 +44,14 @@ module Cretheus.Encode
 
     -- ** Value encoders
     value,
+
+    -- ** Longer tuple encoders
+    tuple4,
+    tuple5,
+    tuple6,
+    tuple7,
+    tuple8,
+    tuple9,
   )
 where
 
